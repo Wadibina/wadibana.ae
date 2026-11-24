@@ -1,10 +1,12 @@
 # Security
 
-## Current deployment risks
+## Deployment status and risks
 
-- `firebase.database.rules.json` currently grants public read and write access. Do not deploy it or use the application with live data until database rules enforce authenticated, role-aware access.
+- The repository now includes deny-by-default Realtime Database rules and username-based Cloud Functions authentication. These are source changes only: they have not been deployed or verified against the live Firebase project. Do not treat production as secured until deployment and access tests succeed.
+- Legacy Firebase rules allowed public reads and writes. Treat old password hashes and data as potentially exposed or altered. Rotate passwords, review access logs where available, and assess any personal-data exposure. The migration deliberately discards all old password hashes and requires a newly verified role/branch map.
+- Follow the backup, account-map, dry-run, migration, and deployment sequence in `README.md`. Do not deploy the migrated frontend before the backend and database rules are ready.
 - The repository has contained a Google OAuth client secret and a PEM private key. Treat both as compromised: revoke or rotate them with their respective providers. Removing local copies does not remove them from Git history.
-- The PHP endpoints currently allow cross-origin requests from any origin and use an optional Firebase token. Configure trusted origins and server-side authentication before exposing them publicly.
+- Review any PHP endpoints before public exposure. Configure trusted origins and require verified server-side authentication; do not rely on an optional Firebase token or permissive CORS.
 
 ## Reporting
 
