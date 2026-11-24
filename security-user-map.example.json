@@ -1,0 +1,8 @@
+{
+  "REPLACE_WITH_VERIFIED_FIREBASE_UID": {
+    "username": "verified-login-name",
+    "fullName": "Verified account name",
+    "role": "owner",
+    "branchId": "all"
+  }
+}
