@@ -1,6 +1,81 @@
 {
   "rules": {
-    ".read": true,
-    ".write": true
+    ".read": false,
+    ".write": false,
+    "users": {
+      ".indexOn": ["branchId"],
+      ".read": "auth != null && root.child('users').child(auth.uid).child('active').val() === true && auth.token.auth_time >= root.child('users').child(auth.uid).child('tokenValidAfter').val() && ((auth.token.role === 'owner' || auth.token.role === 'it_admin' || auth.token.role === 'gm') || ((auth.token.role === 'branch_manager' || auth.token.role === 'branch_manager_accountant') && query.orderByChild === 'branchId' && query.equalTo === auth.token.branchId))",
+      "$uid": {
+        ".read": "auth != null && root.child('users').child(auth.uid).child('active').val() === true && auth.token.auth_time >= root.child('users').child(auth.uid).child('tokenValidAfter').val() && (auth.uid === $uid || auth.token.role === 'owner' || auth.token.role === 'it_admin' || auth.token.role === 'gm')"
+      }
+    },
+    "systemUnifiedData": {
+      "$branch": {
+        "passengers": {
+          ".read": "auth != null && root.child('users').child(auth.uid).child('active').val() === true && auth.token.auth_time >= root.child('users').child(auth.uid).child('tokenValidAfter').val() && (($branch === 'unassigned' && (auth.token.role === 'owner' || auth.token.role === 'it_admin' || auth.token.role === 'gm')) || ($branch !== 'unassigned' && (auth.token.role === 'owner' || auth.token.role === 'it_admin' || auth.token.role === 'gm' || auth.token.branchId === $branch || auth.token.role === 'chief_accountant' && auth.token.branchId === 'all')))",
+          ".write": "auth != null && root.child('users').child(auth.uid).child('active').val() === true && auth.token.auth_time >= root.child('users').child(auth.uid).child('tokenValidAfter').val() && (($branch === 'unassigned' && (auth.token.role === 'owner' || auth.token.role === 'it_admin' || auth.token.role === 'gm')) || ($branch !== 'unassigned' && (auth.token.role === 'owner' || auth.token.role === 'it_admin' || auth.token.role === 'gm' || auth.token.branchId === $branch || auth.token.role === 'chief_accountant' && auth.token.branchId === 'all')))"
+        },
+        "cargo": {
+          ".read": "auth != null && root.child('users').child(auth.uid).child('active').val() === true && auth.token.auth_time >= root.child('users').child(auth.uid).child('tokenValidAfter').val() && (($branch === 'unassigned' && (auth.token.role === 'owner' || auth.token.role === 'it_admin' || auth.token.role === 'gm')) || ($branch !== 'unassigned' && (auth.token.role === 'owner' || auth.token.role === 'it_admin' || auth.token.role === 'gm' || auth.token.branchId === $branch || auth.token.role === 'chief_accountant' && auth.token.branchId === 'all')))",
+          ".write": "auth != null && root.child('users').child(auth.uid).child('active').val() === true && auth.token.auth_time >= root.child('users').child(auth.uid).child('tokenValidAfter').val() && (($branch === 'unassigned' && (auth.token.role === 'owner' || auth.token.role === 'it_admin' || auth.token.role === 'gm')) || ($branch !== 'unassigned' && (auth.token.role === 'owner' || auth.token.role === 'it_admin' || auth.token.role === 'gm' || auth.token.branchId === $branch || auth.token.role === 'chief_accountant' && auth.token.branchId === 'all')))"
+        },
+        "transitVisas": {
+          ".read": "auth != null && root.child('users').child(auth.uid).child('active').val() === true && auth.token.auth_time >= root.child('users').child(auth.uid).child('tokenValidAfter').val() && (($branch === 'unassigned' && (auth.token.role === 'owner' || auth.token.role === 'it_admin' || auth.token.role === 'gm')) || ($branch !== 'unassigned' && (auth.token.role === 'owner' || auth.token.role === 'it_admin' || auth.token.role === 'gm' || auth.token.branchId === $branch || auth.token.role === 'chief_accountant' && auth.token.branchId === 'all')))",
+          ".write": "auth != null && root.child('users').child(auth.uid).child('active').val() === true && auth.token.auth_time >= root.child('users').child(auth.uid).child('tokenValidAfter').val() && (($branch === 'unassigned' && (auth.token.role === 'owner' || auth.token.role === 'it_admin' || auth.token.role === 'gm')) || ($branch !== 'unassigned' && (auth.token.role === 'owner' || auth.token.role === 'it_admin' || auth.token.role === 'gm' || auth.token.branchId === $branch || auth.token.role === 'chief_accountant' && auth.token.branchId === 'all')))"
+        },
+        "trips": {
+          ".read": "auth != null && root.child('users').child(auth.uid).child('active').val() === true && auth.token.auth_time >= root.child('users').child(auth.uid).child('tokenValidAfter').val() && (($branch === 'unassigned' && (auth.token.role === 'owner' || auth.token.role === 'it_admin' || auth.token.role === 'gm')) || ($branch !== 'unassigned' && (auth.token.role === 'owner' || auth.token.role === 'it_admin' || auth.token.role === 'gm' || auth.token.branchId === $branch && (auth.token.role === 'branch_manager' || auth.token.role === 'branch_manager_accountant'))))",
+          ".write": "auth != null && root.child('users').child(auth.uid).child('active').val() === true && auth.token.auth_time >= root.child('users').child(auth.uid).child('tokenValidAfter').val() && (($branch === 'unassigned' && (auth.token.role === 'owner' || auth.token.role === 'it_admin' || auth.token.role === 'gm')) || ($branch !== 'unassigned' && (auth.token.role === 'owner' || auth.token.role === 'it_admin' || auth.token.role === 'gm' || auth.token.branchId === $branch && (auth.token.role === 'branch_manager' || auth.token.role === 'branch_manager_accountant'))))"
+        },
+        "buses": {
+          ".read": "auth != null && root.child('users').child(auth.uid).child('active').val() === true && auth.token.auth_time >= root.child('users').child(auth.uid).child('tokenValidAfter').val() && (($branch === 'unassigned' && (auth.token.role === 'owner' || auth.token.role === 'it_admin' || auth.token.role === 'gm')) || ($branch !== 'unassigned' && (auth.token.role === 'owner' || auth.token.role === 'it_admin' || auth.token.role === 'gm' || auth.token.branchId === $branch && (auth.token.role === 'branch_manager' || auth.token.role === 'branch_manager_accountant'))))",
+          ".write": "auth != null && root.child('users').child(auth.uid).child('active').val() === true && auth.token.auth_time >= root.child('users').child(auth.uid).child('tokenValidAfter').val() && (($branch === 'unassigned' && (auth.token.role === 'owner' || auth.token.role === 'it_admin' || auth.token.role === 'gm')) || ($branch !== 'unassigned' && (auth.token.role === 'owner' || auth.token.role === 'it_admin' || auth.token.role === 'gm' || auth.token.branchId === $branch && (auth.token.role === 'branch_manager' || auth.token.role === 'branch_manager_accountant'))))"
+        },
+        "drivers": {
+          ".read": "auth != null && root.child('users').child(auth.uid).child('active').val() === true && auth.token.auth_time >= root.child('users').child(auth.uid).child('tokenValidAfter').val() && (($branch === 'unassigned' && (auth.token.role === 'owner' || auth.token.role === 'it_admin' || auth.token.role === 'gm')) || ($branch !== 'unassigned' && (auth.token.role === 'owner' || auth.token.role === 'it_admin' || auth.token.role === 'gm' || auth.token.branchId === $branch && (auth.token.role === 'branch_accountant' || auth.token.role === 'branch_manager_accountant') || auth.token.role === 'chief_accountant' && auth.token.branchId === 'all')))",
+          ".write": "auth != null && root.child('users').child(auth.uid).child('active').val() === true && auth.token.auth_time >= root.child('users').child(auth.uid).child('tokenValidAfter').val() && (($branch === 'unassigned' && (auth.token.role === 'owner' || auth.token.role === 'it_admin' || auth.token.role === 'gm')) || ($branch !== 'unassigned' && (auth.token.role === 'owner' || auth.token.role === 'it_admin' || auth.token.role === 'gm' || auth.token.branchId === $branch && (auth.token.role === 'branch_accountant' || auth.token.role === 'branch_manager_accountant') || auth.token.role === 'chief_accountant' && auth.token.branchId === 'all')))"
+        },
+        "employees": {
+          ".read": "auth != null && root.child('users').child(auth.uid).child('active').val() === true && auth.token.auth_time >= root.child('users').child(auth.uid).child('tokenValidAfter').val() && (($branch === 'unassigned' && (auth.token.role === 'owner' || auth.token.role === 'it_admin' || auth.token.role === 'gm')) || ($branch !== 'unassigned' && (auth.token.role === 'owner' || auth.token.role === 'it_admin' || auth.token.role === 'gm' || auth.token.branchId === $branch && auth.token.role === 'branch_manager_accountant' || auth.token.role === 'chief_accountant' && auth.token.branchId === 'all')))",
+          ".write": "auth != null && root.child('users').child(auth.uid).child('active').val() === true && auth.token.auth_time >= root.child('users').child(auth.uid).child('tokenValidAfter').val() && (($branch === 'unassigned' && (auth.token.role === 'owner' || auth.token.role === 'it_admin' || auth.token.role === 'gm')) || ($branch !== 'unassigned' && (auth.token.role === 'owner' || auth.token.role === 'it_admin' || auth.token.role === 'gm' || auth.token.branchId === $branch && auth.token.role === 'branch_manager_accountant' || auth.token.role === 'chief_accountant' && auth.token.branchId === 'all')))"
+        },
+        "vouchers": {
+          ".read": "auth != null && root.child('users').child(auth.uid).child('active').val() === true && auth.token.auth_time >= root.child('users').child(auth.uid).child('tokenValidAfter').val() && (($branch === 'unassigned' && (auth.token.role === 'owner' || auth.token.role === 'it_admin' || auth.token.role === 'gm')) || ($branch !== 'unassigned' && (auth.token.role === 'owner' || auth.token.role === 'it_admin' || auth.token.role === 'gm' || auth.token.branchId === $branch && (auth.token.role === 'branch_accountant' || auth.token.role === 'branch_manager_accountant') || auth.token.role === 'chief_accountant' && auth.token.branchId === 'all')))",
+          ".write": "auth != null && root.child('users').child(auth.uid).child('active').val() === true && auth.token.auth_time >= root.child('users').child(auth.uid).child('tokenValidAfter').val() && (($branch === 'unassigned' && (auth.token.role === 'owner' || auth.token.role === 'it_admin' || auth.token.role === 'gm')) || ($branch !== 'unassigned' && (auth.token.role === 'owner' || auth.token.role === 'it_admin' || auth.token.role === 'gm' || auth.token.branchId === $branch && (auth.token.role === 'branch_accountant' || auth.token.role === 'branch_manager_accountant') || auth.token.role === 'chief_accountant' && auth.token.branchId === 'all')))"
+        },
+        "debtInvoices": {
+          ".read": "auth != null && root.child('users').child(auth.uid).child('active').val() === true && auth.token.auth_time >= root.child('users').child(auth.uid).child('tokenValidAfter').val() && (($branch === 'unassigned' && (auth.token.role === 'owner' || auth.token.role === 'it_admin' || auth.token.role === 'gm')) || ($branch !== 'unassigned' && (auth.token.role === 'owner' || auth.token.role === 'it_admin' || auth.token.role === 'gm' || auth.token.branchId === $branch && (auth.token.role === 'branch_accountant' || auth.token.role === 'branch_manager_accountant') || auth.token.role === 'chief_accountant' && auth.token.branchId === 'all')))",
+          ".write": "auth != null && root.child('users').child(auth.uid).child('active').val() === true && auth.token.auth_time >= root.child('users').child(auth.uid).child('tokenValidAfter').val() && (($branch === 'unassigned' && (auth.token.role === 'owner' || auth.token.role === 'it_admin' || auth.token.role === 'gm')) || ($branch !== 'unassigned' && (auth.token.role === 'owner' || auth.token.role === 'it_admin' || auth.token.role === 'gm' || auth.token.branchId === $branch && (auth.token.role === 'branch_accountant' || auth.token.role === 'branch_manager_accountant') || auth.token.role === 'chief_accountant' && auth.token.branchId === 'all')))"
+        },
+        "meta": {
+          ".read": "auth != null && root.child('users').child(auth.uid).child('active').val() === true && auth.token.auth_time >= root.child('users').child(auth.uid).child('tokenValidAfter').val() && (auth.token.role === 'owner' || auth.token.role === 'it_admin' || auth.token.role === 'gm' || auth.token.branchId === $branch)",
+          ".write": "auth != null && root.child('users').child(auth.uid).child('active').val() === true && auth.token.auth_time >= root.child('users').child(auth.uid).child('tokenValidAfter').val() && (auth.token.role === 'owner' || auth.token.role === 'it_admin' || auth.token.role === 'gm' || auth.token.branchId === $branch && (auth.token.role === 'branch_manager' || auth.token.role === 'branch_manager_accountant'))"
+        }
+      }
+    },
+    "authCredentials": {
+      ".read": false,
+      ".write": false
+    },
+    "usernameIndex": {
+      ".read": false,
+      ".write": false
+    },
+    "loginAttempts": {
+      ".read": false,
+      ".write": false
+    },
+    "passwordResetRequests": {
+      ".read": "auth != null && root.child('users').child(auth.uid).child('active').val() === true && auth.token.auth_time >= root.child('users').child(auth.uid).child('tokenValidAfter').val() && (auth.token.role === 'owner' || auth.token.role === 'it_admin' || auth.token.role === 'gm')",
+      ".write": false
+    },
+    "systemAuditLogs": {
+      ".read": "auth != null && root.child('users').child(auth.uid).child('active').val() === true && auth.token.auth_time >= root.child('users').child(auth.uid).child('tokenValidAfter').val() && (auth.token.role === 'owner' || auth.token.role === 'it_admin' || auth.token.role === 'gm')",
+      ".write": false
+    },
+    "ticketCheckIns": {
+      ".read": false,
+      ".write": false
+    }
   }
 }

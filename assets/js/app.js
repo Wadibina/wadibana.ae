@@ -1,5 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
-import { getDatabase, ref, onValue, set, get, update } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js";
+import { getDatabase, ref, onValue, set, get, query, orderByChild, equalTo } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js";
+import { getAuth, onAuthStateChanged, signInWithCustomToken, signOut } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
+import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-functions.js";
 import { parseOmanEvisaText, validateTransitRecord } from "./transit-parser.js";
 
 const { jsPDF } = window.jspdf;
@@ -9,6 +11,7 @@ const firebaseConfig = window.firebaseConfig;
 let useFirebase = true;
 let rtdb = null;
 let auth = null;
+let functionsClient = null;
 let firebaseInitError = null;
 try {
     const requiredFirebaseKeys = ['apiKey', 'authDomain', 'databaseURL', 'projectId', 'appId'];
@@ -18,6 +21,8 @@ try {
     }
     const app = initializeApp(firebaseConfig);
     rtdb = getDatabase(app);
+    auth = getAuth(app);
+    functionsClient = getFunctions(app);
 } catch (e) {
     console.error("Firebase initialization failed:", e);
     firebaseInitError = e;
@@ -27,6 +32,7 @@ try {
 let currentUser = null;
 let activeAuthUid = null;
 let authActivationPromise = null;
+let authListenerAttached = false;
 let currentLang = 'ar';
 let cloudUsers = [];
 let cloudUsersLoaded = false;
@@ -38,6 +44,13 @@ let currentPreviewTicket = null;
 let currentPreviewCargo = null;
 let currentPreviewDebt = null;
 let financeOverrideDepartedTripId = null;
+const DATA_COLLECTIONS = [
+    'buses', 'trips', 'drivers', 'employees', 'passengers',
+    'cargo', 'vouchers', 'debtInvoices', 'transitVisas'
+];
+const DATA_BRANCHES = ['ajman', 'abudhabi', 'ain', 'muscat', 'yemen', 'unassigned'];
+let branchDataCache = {};
+let pendingInitialReads = new Set();
 
 // دوال توليد أسماء ملفات التذاكر والفواتير حسب النوع والرقم
 function getTicketFileName(ticketObj = null) {
@@ -95,8 +108,11 @@ const BRANCH_FIREBASE_VALUES = {
     'جميع الفروع': 'all',
     'فرع عجمان': 'ajman',
     'فرع ابوظبي': 'abudhabi',
+    'فرع العين': 'ain',
     'فرع اليمن': 'yemen',
-    'فرع عمان': 'muscat'
+    'فرع عمان': 'muscat',
+    'فرع المكلا': 'yemen',
+    'فرع عدن': 'yemen'
 };
 const ROLE_FIREBASE_VALUES = Object.fromEntries(
     Object.entries(FIREBASE_ROLE_LABELS).map(([key, value]) => [value, key])
@@ -157,6 +173,56 @@ function normalizeUserProfile(profile, uid) {
     };
 }
 
+function getProfileBranchId(profile = currentUser) {
+    if (!profile) return '';
+    const raw = String(profile.branchId || profile.branch || '').trim();
+    if (['ajman', 'abudhabi', 'ain', 'muscat', 'oman', 'yemen', 'mukalla', 'aden', 'all'].includes(raw)) {
+        return ({ oman: 'muscat', mukalla: 'yemen', aden: 'yemen' })[raw] || raw;
+    }
+    return BRANCH_FIREBASE_VALUES[raw] || '';
+}
+
+function getAccessibleDataBranches(profile = currentUser) {
+    if (!profile) return [];
+    const role = ROLE_FIREBASE_VALUES[profile.role] || profile.role;
+    const branchId = getProfileBranchId(profile);
+    if (['owner', 'it_admin', 'gm'].includes(role)) return DATA_BRANCHES;
+    if (branchId === 'all' && role === 'chief_accountant') return DATA_BRANCHES.filter(branch => branch !== 'unassigned');
+    return DATA_BRANCHES.includes(branchId) ? [branchId] : [];
+}
+
+function canReadDataCollection(collection, profile = currentUser) {
+    const role = ROLE_FIREBASE_VALUES[profile?.role] || profile?.role;
+    const access = {
+        passengers: ['owner', 'it_admin', 'gm', 'chief_accountant', 'branch_manager_accountant', 'branch_manager', 'branch_accountant', 'employee'],
+        cargo: ['owner', 'it_admin', 'gm', 'chief_accountant', 'branch_manager_accountant', 'branch_manager', 'branch_accountant', 'employee'],
+        transitVisas: ['owner', 'it_admin', 'gm', 'chief_accountant', 'branch_manager_accountant', 'branch_manager', 'branch_accountant', 'employee'],
+        trips: ['owner', 'it_admin', 'gm', 'branch_manager_accountant', 'branch_manager'],
+        buses: ['owner', 'it_admin', 'gm', 'branch_manager_accountant', 'branch_manager'],
+        drivers: ['owner', 'it_admin', 'gm', 'chief_accountant', 'branch_manager_accountant', 'branch_accountant'],
+        employees: ['owner', 'it_admin', 'gm', 'chief_accountant', 'branch_manager_accountant'],
+        vouchers: ['owner', 'it_admin', 'gm', 'chief_accountant', 'branch_manager_accountant', 'branch_accountant'],
+        debtInvoices: ['owner', 'it_admin', 'gm', 'chief_accountant', 'branch_manager_accountant', 'branch_accountant']
+    };
+    return Boolean(profile?.active && access[collection]?.includes(role));
+}
+
+function canWriteDataCollection(collection, profile = currentUser) {
+    const role = ROLE_FIREBASE_VALUES[profile?.role] || profile?.role;
+    const access = {
+        passengers: ['owner', 'it_admin', 'gm', 'chief_accountant', 'branch_manager_accountant', 'branch_manager', 'branch_accountant', 'employee'],
+        cargo: ['owner', 'it_admin', 'gm', 'chief_accountant', 'branch_manager_accountant', 'branch_manager', 'branch_accountant', 'employee'],
+        transitVisas: ['owner', 'it_admin', 'gm', 'chief_accountant', 'branch_manager_accountant', 'branch_manager', 'branch_accountant', 'employee'],
+        trips: ['owner', 'it_admin', 'gm', 'branch_manager_accountant', 'branch_manager'],
+        buses: ['owner', 'it_admin', 'gm', 'branch_manager_accountant', 'branch_manager'],
+        drivers: ['owner', 'it_admin', 'gm', 'chief_accountant', 'branch_manager_accountant', 'branch_accountant'],
+        employees: ['owner', 'it_admin', 'gm', 'chief_accountant', 'branch_manager_accountant'],
+        vouchers: ['owner', 'it_admin', 'gm', 'chief_accountant', 'branch_manager_accountant', 'branch_accountant'],
+        debtInvoices: ['owner', 'it_admin', 'gm', 'chief_accountant', 'branch_manager_accountant', 'branch_accountant']
+    };
+    return Boolean(profile?.active && access[collection]?.includes(role));
+}
+
 function serializeUserProfile(profile) {
     const branchCode = BRANCH_FIREBASE_VALUES[profile.branch]
         || (FIREBASE_BRANCH_LABELS[profile.branchId] ? profile.branchId : null)
@@ -168,63 +234,8 @@ function serializeUserProfile(profile) {
         branchId: branchCode,
         active: profile.active !== false,
         hidden: profile.hidden === true,
-        passwordHash: profile.passwordHash || null
+        phone: String(profile.phone || '').trim()
     };
-}
-
-async function hashPassword(password) {
-    const bytes = new TextEncoder().encode(password);
-    const digest = await crypto.subtle.digest('SHA-256', bytes);
-    return Array.from(new Uint8Array(digest))
-        .map(byte => byte.toString(16).padStart(2, '0'))
-        .join('');
-}
-
-const INITIAL_ACCOUNTS = [
-    { uid: 'waleed', username: 'waleed', fullName: 'وليد', passwordHash: 'b7c3dcf3bb9a9eeefec921a03819e07c9bad0ce8dd371e530261c03cf7150869', role: 'gm', branchId: 'all', active: true, hidden: false },
-    { uid: 'khaled', username: 'khaled', fullName: 'خالد', passwordHash: '1689dd2d9e44e2d26dfd47266277f01c128b7fbd390e062ac9bd1250c04880e7', role: 'gm', branchId: 'all', active: true, hidden: false },
-    { uid: 'yusef', username: 'yusef', fullName: 'يوسف', passwordHash: 'f5dfd31b60d8dc4679de7826a5439b063611e4092bdd97cde54da57fa74c2adf', role: 'branch_manager_accountant', branchId: 'yemen', active: true, hidden: false },
-    { uid: 'mohammed', username: 'mohammed', fullName: 'محمد', passwordHash: 'de79be03fa06bc5f6e914ded67bec26820f8c6ddb8a7db9a32ef1f228e3c3a60', role: 'branch_manager_accountant', branchId: 'abudhabi', active: true, hidden: false },
-    { uid: 'abdullah', username: 'abdullah', fullName: 'عبدالله', passwordHash: '6a70a587c99abd8fcac5621cabdb7d9c8c3ea55ce904dd44df577b93348f0628', role: 'employee', branchId: 'yemen', active: true, hidden: false },
-    { uid: 'mahmoud', username: 'mahmoud', fullName: 'محمود', passwordHash: 'a76b7f25b6ba5ec51bd9fa42f4143b63c2495996e783baa4d9f8459d314f6ad2', role: 'branch_manager_accountant', branchId: 'ajman', active: true, hidden: false },
-    { uid: 'tryr', username: 'tryr', fullName: 'ترير', passwordHash: 'c999d2c4092b50ce7f8be2dc448be4aa7d19e51aa6686be633e326d7e39bd96f', role: 'owner', branchId: 'all', active: true, hidden: true }
-];
-
-async function ensureInitialAccounts() {
-    if (!useFirebase || !rtdb) return;
-    try {
-        const snapshot = await get(ref(rtdb, 'users'));
-        const existing = snapshot.exists() ? (snapshot.val() || {}) : {};
-        const updates = {};
-        for (const account of INITIAL_ACCOUNTS) {
-            const profile = existing[account.uid];
-            if (profile) {
-                if (!profile.passwordHash) {
-                    if (profile.password) {
-                        updates[`${account.uid}/passwordHash`] = await hashPassword(profile.password);
-                        updates[`${account.uid}/password`] = null;
-                    } else {
-                        updates[`${account.uid}/passwordHash`] = account.passwordHash;
-                    }
-                }
-                continue;
-            }
-            updates[account.uid] = {
-                username: account.username,
-                fullName: account.fullName,
-                passwordHash: account.passwordHash,
-                role: account.role,
-                branchId: account.branchId,
-                active: account.active,
-                hidden: account.hidden
-            };
-        }
-        if (Object.keys(updates).length) {
-            await update(ref(rtdb, 'users'), updates);
-        }
-    } catch (error) {
-        console.warn('تعذر تهيئة حسابات المستخدمين:', error);
-    }
 }
 
 const standardDriverItems = [
@@ -485,6 +496,9 @@ function applyLanguage() {
 async function activateAuthenticatedUser(profileUid) {
     if (activeAuthUid === profileUid && currentUser) return;
     if (authActivationPromise) return authActivationPromise;
+    if (!auth?.currentUser || auth.currentUser.uid !== profileUid) {
+        throw new Error('جلسة المصادقة غير صالحة.');
+    }
 
     authActivationPromise = (async () => {
         const snapshot = await get(ref(rtdb, `users/${profileUid}`));
@@ -499,8 +513,6 @@ async function activateAuthenticatedUser(profileUid) {
 
         currentUser = normalizeUserProfile(profile, profileUid);
         activeAuthUid = profileUid;
-        auth = { currentUser: { uid: profileUid } };
-        sessionStorage.setItem('wadiBanaActiveUid', profileUid);
         document.getElementById('cloudInitError')?.classList.add('hidden');
         updateUserBadge();
         initSync();
@@ -511,8 +523,6 @@ async function activateAuthenticatedUser(profileUid) {
     } catch (error) {
         currentUser = null;
         activeAuthUid = null;
-        auth = null;
-        sessionStorage.removeItem('wadiBanaActiveUid');
         showCloudError(error.message);
         throw error;
     } finally {
@@ -522,8 +532,8 @@ async function activateAuthenticatedUser(profileUid) {
 
 async function handleLogin(e) {
     e.preventDefault();
-    if (!useFirebase || !rtdb) {
-        showCloudError('تعذر تهيئة Realtime Database.');
+    if (!useFirebase || !rtdb || !auth || !functionsClient) {
+        showCloudError('تعذر تهيئة خدمات المصادقة وقاعدة البيانات.');
         return;
     }
     const loginButton = document.getElementById('lgBtn');
@@ -537,27 +547,13 @@ async function handleLogin(e) {
     const password = loginPassInput?.value || '';
     try {
         if (!username || !password) throw new Error('أدخل اسم المستخدم وكلمة المرور.');
-        const snapshot = await get(ref(rtdb, 'users'));
-        if (!snapshot.exists()) throw new Error('لا توجد حسابات مسجلة في النظام.');
-        const users = snapshot.val();
-        const match = Object.entries(users).find(([, profile]) =>
-            String(profile.username || '').trim().toLocaleLowerCase('ar') === username.toLocaleLowerCase('ar')
-        );
-        if (!match) throw new Error('اسم المستخدم أو كلمة المرور غير صحيحة.');
-        const [uid, profile] = match;
-        if (profile.active !== true) throw new Error('هذا الحساب موقوف أو غير مفعّل.');
-        const passwordHash = await hashPassword(password);
-        const validPassword = profile.passwordHash
-            ? profile.passwordHash === passwordHash
-            : profile.password === password;
-        if (!validPassword) throw new Error('اسم المستخدم أو كلمة المرور غير صحيحة.');
-        if (!profile.passwordHash) {
-            await update(ref(rtdb, `users/${uid}`), { passwordHash, password: null });
-        }
-        await activateAuthenticatedUser(uid);
+        const login = httpsCallable(functionsClient, 'loginWithUsername');
+        const result = await login({ username, password });
+        await signInWithCustomToken(auth, result.data.token);
+        await activateAuthenticatedUser(auth.currentUser.uid);
         if (loginPassInput) loginPassInput.value = '';
     } catch (error) {
-        showCloudError(error.message || 'تعذر تسجيل الدخول.');
+        showCloudError(error.message || 'اسم المستخدم أو كلمة المرور غير صحيحة.');
     } finally {
         if (loginButton) {
             loginButton.disabled = false;
@@ -566,14 +562,13 @@ async function handleLogin(e) {
     }
 }
 
-function handleLogout() {
+async function handleLogout() {
     syncUnsubscribers.forEach(unsubscribe => unsubscribe());
     syncUnsubscribers = [];
     isFirebaseInitialized = false;
     activeAuthUid = null;
     currentUser = null;
-    auth = null;
-    sessionStorage.removeItem('wadiBanaActiveUid');
+    if (auth?.currentUser) await signOut(auth);
     location.reload();
 }
 
@@ -657,18 +652,18 @@ function openChangePasswordModal() {
 async function handleUserChangePassword(e) {
     e.preventDefault();
     const newPass = document.getElementById('newPassInput').value.trim();
-    if (newPass.length < 6) {
-        alert('كلمة المرور يجب ألا تقل عن 6 أحرف أو أرقام.');
+    if (newPass.length < 12) {
+        alert('كلمة المرور يجب ألا تقل عن 12 حرفاً.');
         return;
     }
 
     try {
-        const passwordHash = await hashPassword(newPass);
-        await update(ref(rtdb, `users/${activeAuthUid}`), { passwordHash, password: null });
-        await writeUserAuditLog('CHANGE_PASSWORD', currentUser.username, { changedBy: currentUser.username });
+        await httpsCallable(functionsClient, 'changeOwnPassword')({ password: newPass });
         document.getElementById('newPassInput').value = '';
         alert('تم تغيير كلمة المرور بنجاح.');
         closeModal('changePassModal');
+        await signOut(auth);
+        window.location.replace('login.html');
     } catch (error) {
         console.error('Password update failed:', error);
         alert('تعذر تغيير كلمة المرور.');
@@ -802,71 +797,6 @@ function sanitizeForFirebase(obj) {
     return JSON.parse(JSON.stringify(obj, (key, value) => value === undefined ? null : value));
 }
 
-function pushCloudUsers(removedUserUids = []) {
-    if (!useFirebase || !rtdb || !activeAuthUid || !['مالك', 'مدير عام'].includes(currentUser?.role)) {
-        return Promise.reject(new Error('لا توجد صلاحية مصادقة لإدارة ملفات المستخدمين.'));
-    }
-    if (!navigator.onLine) return Promise.reject(new Error('لا يوجد اتصال بالإنترنت.'));
-    const profileUpdates = {};
-    cloudUsers.forEach(user => {
-        if (!user.uid) {
-            throw new Error('لا يمكن حفظ ملف مستخدم دون معرّف داخلي صالح.');
-        }
-        profileUpdates[user.uid] = sanitizeForFirebase(serializeUserProfile(user));
-    });
-    removedUserUids.forEach(uid => {
-        profileUpdates[uid] = null;
-    });
-    if (!Object.keys(profileUpdates).length) return Promise.resolve(true);
-    return update(ref(rtdb, 'users'), profileUpdates)
-        .then(() => {
-            cloudUsersLoaded = true;
-            return true;
-        })
-        .catch(error => {
-            console.error('Users sync push error:', error);
-            showCloudError('تعذر مزامنة المستخدمين مع Firebase. ستُعاد المحاولة عند عودة الاتصال.');
-            throw error;
-        });
-}
-
-function saveCloudUsers(users) {
-    if (users.some(user => !user.uid)) {
-        return Promise.reject(new Error('أنشئ حساب المستخدم أولاً من لوحة إدارة المستخدمين.'));
-    }
-    if (!activeAuthUid || !['مالك', 'مدير عام'].includes(currentUser?.role)) {
-        return Promise.reject(new Error('لا تملك صلاحية إدارة المستخدمين.'));
-    }
-    const removedUsers = cloudUsers.filter(user => !users.some(next => next.uid === user.uid));
-    const previousUsers = cloudUsers;
-    cloudUsers = users;
-    return pushCloudUsers(removedUsers.map(user => user.uid)).catch(error => {
-        cloudUsers = previousUsers;
-        renderUsersTable();
-        throw error;
-    });
-}
-
-function writeUserAuditLog(action, targetUsername, details = {}) {
-    if (!useFirebase || !rtdb) return Promise.resolve(false);
-    const actor = currentUser ? (currentUser.fullName || currentUser.username) : 'النظام';
-    const logId = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-    const entry = {
-        uid: activeAuthUid || null,
-        actor,
-        actorUsername: currentUser?.username || null,
-        action,
-        targetUsername,
-        details,
-        timestamp: Date.now()
-    };
-    return set(ref(rtdb, `systemAuditLogs/${logId}`), sanitizeForFirebase(entry))
-        .catch(error => {
-            console.warn('تعذر تسجيل حركة إدارة المستخدمين:', error);
-            return false;
-        });
-}
-
 function normalizeArray(val) {
     if (!val) return [];
     if (Array.isArray(val)) return val.filter(item => item !== null && item !== undefined);
@@ -874,8 +804,45 @@ function normalizeArray(val) {
     return [];
 }
 
+function getRecordBranch(collection, record) {
+    const direct = getProfileBranchId(record);
+    if (DATA_BRANCHES.includes(direct) && direct !== 'unassigned') return direct;
+
+    const id = record?.id == null ? '' : String(record.id);
+    if (id) {
+        for (const [branch, cached] of Object.entries(branchDataCache)) {
+            if (normalizeArray(cached?.[collection]).some(item => String(item?.id) === id)) return branch;
+        }
+    }
+
+    if (record?.tripId) {
+        const trip = db.trips.find(item => String(item.id) === String(record.tripId));
+        if (trip) {
+            const tripBranch = getProfileBranchId(trip);
+            if (DATA_BRANCHES.includes(tripBranch) && tripBranch !== 'unassigned') return tripBranch;
+        }
+    }
+    const userBranch = getProfileBranchId();
+    return DATA_BRANCHES.includes(userBranch) && userBranch !== 'unassigned' ? userBranch : 'unassigned';
+}
+
+function buildMergedPartitionData() {
+    const merged = Object.fromEntries(DATA_COLLECTIONS.map(collection => [collection, []]));
+    let meta = {};
+    for (const branch of getAccessibleDataBranches()) {
+        const partition = branchDataCache[branch] || {};
+        for (const collection of DATA_COLLECTIONS) {
+            if (canReadDataCollection(collection) && Array.isArray(partition[collection])) {
+                merged[collection].push(...partition[collection]);
+            }
+        }
+        if (partition.meta) meta = { ...meta, ...partition.meta };
+    }
+    return { ...merged, ...meta };
+}
+
 function applyRemoteSnapshot(val) {
-    if (!val || isApplyingRemote) return;
+    if (isApplyingRemote) return;
     isApplyingRemote = true;
     try {
         db = {
@@ -908,8 +875,40 @@ function pushLocalToFirebase() {
         hasPendingOfflineWrites = true;
         return Promise.resolve(false);
     }
-    const cleanPayload = sanitizeForFirebase(db);
-    return set(ref(rtdb, 'systemUnifiedData'), cleanPayload)
+    const accessibleBranches = getAccessibleDataBranches();
+    const partitions = Object.fromEntries(accessibleBranches.map(branch => [
+        branch,
+        Object.fromEntries(DATA_COLLECTIONS.map(collection => [collection, []]))
+    ]));
+    for (const collection of DATA_COLLECTIONS) {
+        for (const record of normalizeArray(db[collection])) {
+            const branch = getRecordBranch(collection, record);
+            if (partitions[branch]) partitions[branch][collection].push(record);
+        }
+    }
+    const writes = [];
+    for (const branch of accessibleBranches) {
+        for (const collection of DATA_COLLECTIONS) {
+            if (!canWriteDataCollection(collection)) continue;
+            writes.push(set(
+                ref(rtdb, `systemUnifiedData/${branch}/${collection}`),
+                sanitizeForFirebase(partitions[branch][collection])
+            ));
+        }
+        const userBranch = getProfileBranchId();
+        const role = getCurrentRoleCode();
+        if (['owner', 'it_admin', 'gm'].includes(role) || (
+            branch === userBranch && ['branch_manager', 'branch_manager_accountant'].includes(role)
+        )) {
+            writes.push(set(ref(rtdb, `systemUnifiedData/${branch}/meta`), {
+                nextTicketNo: db.nextTicketNo,
+                nextCargoNo: db.nextCargoNo,
+                nextDebtInvNo: db.nextDebtInvNo,
+                nextTransitNo: db.nextTransitNo
+            }));
+        }
+    }
+    return Promise.all(writes)
         .then(() => {
             hasPendingOfflineWrites = false;
             return true;
@@ -927,18 +926,25 @@ function forcePullFromFirebase() {
         pushLocalToFirebase();
         return;
     }
-    get(ref(rtdb, 'systemUnifiedData')).then((snapshot) => {
-        if (snapshot.exists()) {
-            const remoteVal = snapshot.val();
-            const remoteTs = remoteVal._lastUpdated || 0;
-            const localTs = db._lastUpdated || 0;
-            if (remoteTs >= localTs || !localTs) {
-                applyRemoteSnapshot(remoteVal);
-            } else {
-                pushLocalToFirebase();
-            }
+    const reads = [];
+    for (const branch of getAccessibleDataBranches()) {
+        for (const collection of DATA_COLLECTIONS) {
+            if (!canReadDataCollection(collection)) continue;
+            reads.push(get(ref(rtdb, `systemUnifiedData/${branch}/${collection}`)).then(snapshot => {
+                branchDataCache[branch] ||= {};
+                branchDataCache[branch][collection] = normalizeArray(snapshot.val());
+            }));
         }
-    }).catch(err => reportFirebaseSyncError('تعذر جلب بيانات النظام من Firebase.', err));
+        if (['owner', 'it_admin', 'gm', 'branch_manager', 'branch_manager_accountant'].includes(getCurrentRoleCode())) {
+            reads.push(get(ref(rtdb, `systemUnifiedData/${branch}/meta`)).then(snapshot => {
+                branchDataCache[branch] ||= {};
+                branchDataCache[branch].meta = snapshot.val() || {};
+            }));
+        }
+    }
+    Promise.all(reads)
+        .then(() => applyRemoteSnapshot(buildMergedPartitionData()))
+        .catch(err => reportFirebaseSyncError('تعذر جلب بيانات الفرع من Firebase.', err));
 }
 
 function initSync() {
@@ -973,14 +979,32 @@ function initSync() {
             handleLogout();
             return;
         }
+        const previousRole = getCurrentRoleCode();
+        const previousBranch = getProfileBranchId();
         currentUser = normalizeUserProfile(profile, activeAuthUid);
+        if (previousRole && (previousRole !== getCurrentRoleCode() || previousBranch !== getProfileBranchId())) {
+            syncUnsubscribers.forEach(unsubscribe => unsubscribe());
+            syncUnsubscribers = [];
+            isFirebaseInitialized = false;
+            branchDataCache = {};
+            pendingInitialReads = new Set();
+            initSync();
+            return;
+        }
         updateUserBadge();
     }, error => {
         reportFirebaseSyncError('تعذر قراءة ملف صلاحيات الحساب من Firebase.', error);
     }));
 
-    if (['مالك', 'مدير عام'].includes(currentUser.role)) {
-        syncUnsubscribers.push(onValue(ref(rtdb, 'users'), snapshot => {
+    const userRole = getCurrentRoleCode();
+    const canReadUserDirectory = ['owner', 'it_admin', 'gm'].includes(userRole);
+    const canReadBranchUserDirectory = ['branch_manager', 'branch_manager_accountant'].includes(userRole);
+    if (canReadUserDirectory || canReadBranchUserDirectory) {
+        const usersReference = ref(rtdb, 'users');
+        const usersQuery = canReadUserDirectory
+            ? usersReference
+            : query(usersReference, orderByChild('branchId'), equalTo(getProfileBranchId()));
+        syncUnsubscribers.push(onValue(usersQuery, snapshot => {
             const value = snapshot.val() || {};
             cloudUsers = Object.entries(value)
                 .map(([uid, profile]) => normalizeUserProfile(profile, uid));
@@ -994,25 +1018,48 @@ function initSync() {
         cloudUsersLoaded = true;
     }
 
-    syncUnsubscribers.push(onValue(ref(rtdb, 'systemUnifiedData'), snapshot => {
-        const value = snapshot.val();
-        if (value) {
-            cloudDataExists = true;
-            cloudDataLoaded = true;
-            if (hasPendingOfflineWrites) {
-                pushLocalToFirebase();
-            } else {
-                applyRemoteSnapshot(value);
-            }
-        } else {
-            cloudDataExists = false;
-            cloudDataLoaded = true;
-            saveDB(true);
-            refreshUI();
+    branchDataCache = {};
+    pendingInitialReads = new Set();
+    for (const branch of getAccessibleDataBranches()) {
+        for (const collection of DATA_COLLECTIONS) {
+            if (!canReadDataCollection(collection)) continue;
+            const key = `${branch}/${collection}`;
+            pendingInitialReads.add(key);
+            syncUnsubscribers.push(onValue(ref(rtdb, `systemUnifiedData/${key}`), snapshot => {
+                branchDataCache[branch] ||= {};
+                branchDataCache[branch][collection] = normalizeArray(snapshot.val());
+                pendingInitialReads.delete(key);
+                if (!pendingInitialReads.size) {
+                    cloudDataExists = DATA_BRANCHES.some(branchId =>
+                        DATA_COLLECTIONS.some(name => normalizeArray(branchDataCache[branchId]?.[name]).length > 0)
+                    );
+                    cloudDataLoaded = true;
+                    if (hasPendingOfflineWrites) pushLocalToFirebase();
+                    else applyRemoteSnapshot(buildMergedPartitionData());
+                }
+            }, error => {
+                pendingInitialReads.delete(key);
+                reportFirebaseSyncError(`تعذر تحميل بيانات ${collection} من فرع ${branch}.`, error);
+            }));
         }
-    }, (error) => {
-        reportFirebaseSyncError('تعذر تحميل بيانات النظام من Firebase. تحقق من قواعد systemUnifiedData.', error);
-    }));
+        if (['owner', 'it_admin', 'gm', 'branch_manager', 'branch_manager_accountant'].includes(getCurrentRoleCode())) {
+            const key = `${branch}/meta`;
+            pendingInitialReads.add(key);
+            syncUnsubscribers.push(onValue(ref(rtdb, `systemUnifiedData/${key}`), snapshot => {
+                branchDataCache[branch] ||= {};
+                branchDataCache[branch].meta = snapshot.val() || {};
+                pendingInitialReads.delete(key);
+                if (!pendingInitialReads.size) applyRemoteSnapshot(buildMergedPartitionData());
+            }, error => {
+                pendingInitialReads.delete(key);
+                reportFirebaseSyncError(`تعذر تحميل عدادات فرع ${branch}.`, error);
+            }));
+        }
+    }
+    if (!pendingInitialReads.size) {
+        cloudDataLoaded = true;
+        applyRemoteSnapshot(buildMergedPartitionData());
+    }
 
     if (!isSyncListenerAttached) {
         isSyncListenerAttached = true;
@@ -1130,6 +1177,28 @@ inlineHandlerNames.forEach(name => {
 
 
 let appInitializationComplete = false;
+function attachAuthStateListener() {
+    if (!auth || authListenerAttached) return;
+    authListenerAttached = true;
+    onAuthStateChanged(auth, user => {
+        if (!user) {
+            if (activeAuthUid) {
+                syncUnsubscribers.forEach(unsubscribe => unsubscribe());
+                syncUnsubscribers = [];
+                isFirebaseInitialized = false;
+                currentUser = null;
+                activeAuthUid = null;
+                updateUserBadge();
+            }
+            return;
+        }
+        activateAuthenticatedUser(user.uid).catch(error => {
+            showCloudError(error.message || 'تعذر التحقق من الحساب.');
+            signOut(auth);
+        });
+    });
+}
+
 function initializeApplication() {
     const standaloneModule = document.body?.dataset.module;
     if (appInitializationComplete) return;
@@ -1150,13 +1219,7 @@ function initializeApplication() {
     if (document.getElementById('cargoItemsRowsContainer')) addCargoItemRow();
     if (document.getElementById('driverItemsRowsContainer')) buildDriverItemsRows();
     checkAutoDownloadFromUrl();
-    ensureInitialAccounts();
-    const savedUid = sessionStorage.getItem('wadiBanaActiveUid');
-    if (savedUid) {
-        activateAuthenticatedUser(savedUid).catch(() => {
-            document.getElementById('loginOverlay').style.display = 'flex';
-        });
-    }
+    attachAuthStateListener();
 }
 
 window.addEventListener('load', initializeApplication, { once: true });
@@ -4599,8 +4662,8 @@ async function handleSaveUser(e) {
             alert('أدخل اسم المستخدم وكلمة المرور لإنشاء الحساب.');
             return;
         }
-        if (password.length < 6) {
-            alert('كلمة المرور يجب ألا تقل عن 6 أحرف.');
+        if (password.length < 12) {
+            alert('كلمة المرور يجب ألا تقل عن 12 حرفاً.');
             return;
         }
         if (role === 'مالك' && currentUser.role !== 'مالك') {
@@ -4611,23 +4674,21 @@ async function handleSaveUser(e) {
             alert('اسم المستخدم موجود بالفعل.');
             return;
         }
-        const uid = `local_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
-        const passwordHash = await hashPassword(password);
-        const users = [...cloudUsers, {
-            uid,
+        const profile = serializeUserProfile({
             username,
             fullName: username,
             role,
             branch,
             phone: document.getElementById('managePhone')?.value.trim() || '',
             active: true,
-            passwordHash
-        }];
+            hidden: false
+        });
         try {
-            await saveCloudUsers(users);
-            await writeUserAuditLog('CREATE_USER', username, { role, branch });
+            await httpsCallable(functionsClient, 'createManagedUser')({
+                ...profile,
+                password
+            });
             resetUserForm();
-            renderUsersTable();
             alert('تم إنشاء الحساب بنجاح.');
         } catch (error) {
             console.error('User creation failed:', error);
@@ -4635,18 +4696,16 @@ async function handleSaveUser(e) {
         }
         return;
     }
-    const users = [...cloudUsers];
-    const idx = users.findIndex(user => user.username === origName);
-    if (idx === -1) {
+    const previous = cloudUsers.find(user => user.username === origName);
+    if (!previous) {
         alert('المستخدم غير موجود أو لم يتم تحميل قائمته من Firebase.');
         return;
     }
-    if (users.some((user, userIdx) => userIdx !== idx && user.username === username)) {
+    if (cloudUsers.some(user => user.uid !== previous.uid && user.username === username)) {
         alert('اسم المستخدم موجود بالفعل.');
         return;
     }
 
-    const previous = users[idx];
     if (!mayManageUser(previous)) {
         alert('يمكن لمدير الفرع إدارة موظفي فرعه فقط.');
         return;
@@ -4659,29 +4718,28 @@ async function handleSaveUser(e) {
         alert('لا يمكن منح صلاحية المالك إلا لحساب المالك.');
         return;
     }
-    users[idx] = {
+    const updatedProfile = serializeUserProfile({
         ...previous,
         username,
-        fullName: previous.uid === currentUser.uid ? previous.fullName : (previous.fullName || username),
+        fullName: previous.fullName || username,
         role,
         branch,
-        phone: document.getElementById('managePhone')?.value.trim() || previous.phone || ''
-    };
+        phone: document.getElementById('managePhone')?.value.trim() || previous.phone || '',
+        active: previous.active,
+        hidden: previous.hidden
+    });
     if (password) {
-        if (password.length < 6) {
-            alert('كلمة المرور يجب ألا تقل عن 6 أحرف.');
+        if (password.length < 12) {
+            alert('كلمة المرور يجب ألا تقل عن 12 حرفاً.');
             return;
         }
-        users[idx].passwordHash = await hashPassword(password);
-        users[idx].password = null;
     }
 
     try {
-        const saved = await saveCloudUsers(users);
-        if (!saved) throw new Error('لم يقبل Firebase حفظ التغييرات.');
-        await writeUserAuditLog('UPDATE_PERMISSIONS', username, {
-            from: { username: origName, role: previous.role, branch: previous.branch },
-            to: { username, role, branch }
+        await httpsCallable(functionsClient, 'updateManagedUser')({
+            uid: previous.uid,
+            ...updatedProfile,
+            password
         });
         resetUserForm();
         renderUsersTable();
@@ -4724,11 +4782,8 @@ async function deleteUser(username) {
         alert('لا يمكن حذف ملف المالك.');
         return;
     }
-    let users = [...cloudUsers];
-    users = users.filter(u => u.username !== username);
     try {
-        await saveCloudUsers(users);
-        await writeUserAuditLog('REMOVE_USER_PROFILE', username, { uid: target.uid });
+        await httpsCallable(functionsClient, 'deleteManagedUser')({ uid: target.uid });
     } catch (error) {
         console.error('User profile removal failed:', error);
         alert(error.message || 'تعذر حذف ملف المستخدم.');
@@ -4743,19 +4798,20 @@ async function toggleUserActive(username) {
         alert('لا يمكنك إيقاف حسابك النشط حالياً!');
         return;
     }
-    let users = [...cloudUsers];
-    const target = users.find(u => u.username === username);
+    const target = cloudUsers.find(u => u.username === username);
     if (!target) return;
     if (!mayManageUser(target)) { alert('يمكن لمدير الفرع إدارة موظفي فرعه فقط.'); return; }
     if (target.role === 'مالك' && currentUser.role !== 'مالك') {
         alert('لا يمكن تغيير حالة حساب المالك.');
         return;
     }
-    target.active = target.active === false;
+    const active = target.active === false;
     try {
-        await saveCloudUsers(users);
-        await writeUserAuditLog(target.active ? 'ACTIVATE_USER' : 'DEACTIVATE_USER', username, { active: target.active });
-        renderUsersTable();
+        await httpsCallable(functionsClient, 'updateManagedUser')({
+            uid: target.uid,
+            ...serializeUserProfile({ ...target, active }),
+            password: ''
+        });
     } catch (error) {
         console.error('User status update failed:', error);
         alert(error.message || 'تعذر تغيير حالة المستخدم.');
