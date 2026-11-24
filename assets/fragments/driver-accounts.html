@@ -1,0 +1,121 @@
+<section id="module-drivers" class="tab-content hidden space-y-6">
+                    <div class="bg-cardbg border border-bordergold p-5 rounded-2xl shadow-xl space-y-4">
+                        <div class="flex justify-between items-center border-b border-zinc-800 pb-3">
+                            <h3 class="text-gold font-extrabold text-sm flex items-center gap-2">
+                                <i class="fa-solid fa-id-card-clip text-gold"></i> إنشاء وتسجيل جدول حساب رحلة السائق
+                                (ذهاب وعودة) وتحديث الصندوق تلقائياً
+                            </h3>
+                            <button id="cancelEditDriverBtn" onclick="resetDriverForm()"
+                                class="hidden text-xs text-red-400 font-bold bg-red-950/40 border border-red-800 px-2.5 py-1 rounded-lg">إغلاق
+                                التعديل</button>
+                        </div>
+
+                        <form id="driverForm" onsubmit="handleSaveDriverAccount(event)" class="space-y-4">
+                            <input type="hidden" id="driverEditId" value="">
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-xs text-gold mb-1 font-bold">رقم الباص *</label>
+                                    <input type="text" id="drvBusNo" required placeholder="مثال: باص رقم 5"
+                                        class="w-full bg-darkbg border border-gold rounded-xl p-2.5 text-xs text-zinc-100 outline-none font-bold"
+                                        value="باص وادي بناء الرئيسي">
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-gold mb-1 font-bold">اسم السائق *</label>
+                                    <input type="text" id="drvName" required placeholder="اسم السائق الكامل"
+                                        class="w-full bg-darkbg border border-gold rounded-xl p-2.5 text-xs text-zinc-100 outline-none font-bold">
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-gold mb-1 font-bold">تاريخ الرحلة *</label>
+                                    <input type="date" id="drvDate" required
+                                        class="w-full bg-darkbg border border-gold rounded-xl p-2.5 text-xs text-zinc-100 outline-none font-bold">
+                                </div>
+                            </div>
+
+                            <div class="bg-darkbg p-4 rounded-xl border border-zinc-800 space-y-3">
+                                <span class="text-xs font-bold text-gold block mb-2">بنود المصروفات وحسابات الرحلة
+                                    (تُجمع تلقائياً لأسفل الجدول وتُرحل للصندوق):</span>
+                                <div class="overflow-x-auto">
+                                    <table class="w-full text-right text-xs" style="direction: inherit;">
+                                        <thead>
+                                            <tr class="text-zinc-400 border-b border-zinc-800">
+                                                <th class="p-2">الوصف</th>
+                                                <th class="p-2 w-32 text-center">الروحة</th>
+                                                <th class="p-2 w-32 text-center">الرجعة</th>
+                                                <th class="p-2">ملاحظات</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="driverItemsRowsContainer"></tbody>
+                                        <tfoot>
+                                            <tr class="bg-zinc-900 font-black text-gold border-t border-gold/40">
+                                                <td class="p-2 text-left">إجمالي المبالغ:</td>
+                                                <td id="formTotalRoha" class="p-2 text-center text-indigo-300">0</td>
+                                                <td id="formTotalRajah" class="p-2 text-center text-emerald-300">0</td>
+                                                <td class="p-2"></td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <div
+                                class="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-darkbg p-4 rounded-xl border border-gold">
+                                <div>
+                                    <label class="block text-xs text-gold mb-1 font-bold">حساب السائق للرحلة *</label>
+                                    <input type="number" step="any" id="drvTripDue" oninput="calculateDriverNet()"
+                                        required
+                                        class="w-full bg-zinc-900 border border-gold rounded-xl p-2.5 text-xs text-gold font-bold"
+                                        value="2000">
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-zinc-400 mb-1">متبقي حساب / سلف سابقة</label>
+                                    <input type="number" step="any" id="drvRemaining" oninput="calculateDriverNet()"
+                                        class="w-full bg-zinc-900 border border-zinc-700 rounded-xl p-2.5 text-xs text-zinc-200"
+                                        value="0">
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-emerald-400 mb-1 font-bold">باقي حساب السائق
+                                        (الصافي)</label>
+                                    <input type="text" id="drvNetDue" readonly
+                                        class="w-full bg-zinc-900 border border-emerald-500 rounded-xl p-2.5 text-xs text-emerald-400 font-black"
+                                        value="2000 AED">
+                                </div>
+                            </div>
+
+                            <button type="submit" id="drvSubmitBtn"
+                                class="w-full gold-gradient-bg text-black font-black py-3 rounded-xl shadow">حفظ وتصديق
+                                حساب السائق وترحيل المصروفات للصندوق</button>
+
+                            <div id="driverEditAuditBox"
+                                class="hidden bg-zinc-900/90 border border-amber-500/40 rounded-xl p-3 text-xs text-zinc-300 mt-3">
+                                <div class="font-bold text-gold mb-1.5 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-clock-rotate-left"></i> سجل التواريخ والمستخدمين (من الإنشاء
+                                    حتى آخر تعديل):
+                                </div>
+                                <div id="driverEditAuditList" class="space-y-1 text-[11px] text-zinc-400"></div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="bg-cardbg border border-bordergold rounded-2xl overflow-hidden shadow-xl">
+                        <div class="p-4 border-b border-zinc-800 flex justify-between items-center">
+                            <span class="font-bold text-gold text-xs">سجل حسابات السائقين ورحلات الذهاب والعودة
+                                (تنازلي)</span>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="custom-table" id="driversTable">
+                                <thead>
+                                    <tr>
+                                        <th>معرف الرحلة</th>
+                                        <th>تاريخ الرحلة</th>
+                                        <th>رقم الباص</th>
+                                        <th>اسم السائق</th>
+                                        <th>إجمالي المصروفات</th>
+                                        <th>باقي حساب السائق</th>
+                                        <th>الإجراءات والطباعة</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>

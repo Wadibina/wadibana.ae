@@ -1,0 +1,134 @@
+<section id="module-salaries" class="tab-content hidden space-y-6">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- إضافة/تعديل موظف أو سائق -->
+                        <div class="bg-cardbg border border-bordergold p-5 rounded-2xl shadow-xl space-y-4">
+                            <div class="flex justify-between items-center border-b border-zinc-800 pb-3">
+                                <h3 class="text-gold font-extrabold text-sm flex items-center gap-2">
+                                    <i class="fa-solid fa-user-plus text-gold"></i> <span id="empFormTitle">إضافة موظف
+                                        أو سائق جديد</span>
+                                </h3>
+                                <button id="cancelEditEmpBtn" onclick="resetEmployeeForm()"
+                                    class="hidden text-xs text-red-400 font-bold bg-red-950/40 border border-red-800 px-2.5 py-1 rounded-lg">إغلاق
+                                    التعديل</button>
+                            </div>
+                            <form id="employeeForm" onsubmit="handleSaveEmployee(event)" class="space-y-3">
+                                <input type="hidden" id="empEditId" value="">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block text-xs text-gold mb-1 font-bold">الاسم الكامل *</label>
+                                        <input type="text" id="empName" required placeholder="اسم الموظف أو السائق"
+                                            class="w-full bg-darkbg border border-zinc-700 rounded-xl p-2.5 text-xs text-zinc-100 outline-none">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs text-gold mb-1 font-bold">الصفة الوظيفية ونظام
+                                            الحساب *</label>
+                                        <select id="empRoleType" onchange="onEmpRoleTypeChange()"
+                                            class="w-full bg-darkbg border border-gold rounded-xl p-2.5 text-xs text-gold font-bold outline-none">
+                                            <option value="سائق">🚌 سائق (حساب بالرحلة)</option>
+                                            <option value="موظف">💼 موظف إداري / فرع (مرتب شهري)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div>
+                                        <label id="empBaseRateLabel"
+                                            class="block text-xs text-emerald-400 mb-1 font-bold">أجر الرحلة الواحدة
+                                            (درهم) *</label>
+                                        <input type="number" step="any" id="empBaseRate" required value="2000"
+                                            class="w-full bg-darkbg border border-emerald-500 rounded-xl p-2.5 text-xs text-emerald-300 font-bold outline-none">
+                                    </div>
+                                    <div>
+                                        <label id="empWorkUnitsLabel"
+                                            class="block text-xs text-indigo-300 mb-1 font-bold">عدد الرحلات المستحقة
+                                            *</label>
+                                        <input type="number" step="any" id="empWorkUnits" required value="0"
+                                            class="w-full bg-darkbg border border-indigo-500 rounded-xl p-2.5 text-xs text-indigo-300 font-bold outline-none">
+                                    </div>
+                                </div>
+                                <button type="submit" id="empSubmitBtn"
+                                    class="w-full gold-gradient-bg text-black font-black py-2.5 rounded-xl text-xs shadow">حفظ
+                                    بيانات الموظف / السائق</button>
+
+                                <div id="empEditAuditBox"
+                                    class="hidden bg-zinc-900/90 border border-amber-500/40 rounded-xl p-3 text-xs text-zinc-300 mt-2">
+                                    <div class="font-bold text-gold mb-1 flex items-center gap-1.5">
+                                        <i class="fa-solid fa-clock-rotate-left"></i> سجل التواريخ والمستخدمين:
+                                    </div>
+                                    <div id="empEditAuditList" class="space-y-1 text-[11px] text-zinc-400"></div>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- إصدار سند سلفة -->
+                        <div class="bg-cardbg border border-bordergold p-5 rounded-2xl shadow-xl space-y-4">
+                            <h3
+                                class="text-amber-400 font-extrabold text-sm border-b border-zinc-800 pb-3 flex items-center gap-2">
+                                <i class="fa-solid fa-hand-holding-dollar text-amber-400"></i> إصدار سند سلفة (تُخصم
+                                تلقائياً من حساب الموظف/السائق)
+                            </h3>
+                            <form id="advanceForm" onsubmit="handleSaveAdvance(event)" class="space-y-3">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block text-xs text-gold mb-1 font-bold">اختر الموظف أو السائق
+                                            *</label>
+                                        <select id="advEmpSelect" required
+                                            class="w-full bg-darkbg border border-gold rounded-xl p-2.5 text-xs text-gold font-bold outline-none">
+                                            <option value="">-- اختر الاسم --</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs text-amber-400 mb-1 font-bold">مبلغ السلفة (درهم)
+                                            *</label>
+                                        <input type="number" step="any" id="advAmount" required min="1" placeholder="0"
+                                            class="w-full bg-darkbg border border-amber-500 rounded-xl p-2.5 text-xs text-amber-300 font-bold outline-none">
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block text-xs text-zinc-400 mb-1 font-bold">تاريخ السلفة *</label>
+                                        <input type="date" id="advDate" required
+                                            class="w-full bg-darkbg border border-zinc-700 rounded-xl p-2.5 text-xs text-zinc-100 outline-none">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs text-zinc-400 mb-1 font-bold">ملاحظات السلفة</label>
+                                        <input type="text" id="advNote" placeholder="تفاصيل السلفة..."
+                                            class="w-full bg-darkbg border border-zinc-700 rounded-xl p-2.5 text-xs text-zinc-100 outline-none">
+                                    </div>
+                                </div>
+                                <button type="submit"
+                                    class="w-full bg-amber-600 hover:bg-amber-500 text-black font-black py-2.5 rounded-xl text-xs shadow">
+                                    <i class="fa-solid fa-file-invoice-dollar ml-1"></i> إصدار سند سلفة وخصمها تلقائياً
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- جدول كشف الرواتب والمستحقات -->
+                    <div class="bg-cardbg border border-bordergold rounded-2xl overflow-hidden shadow-xl">
+                        <div class="p-4 border-b border-zinc-800 flex justify-between items-center flex-wrap gap-2">
+                            <span class="font-bold text-gold text-xs"><i
+                                    class="fa-solid fa-money-check-dollar ml-1"></i> كشف الرواتب ومستحقات السائقين
+                                والموظفين</span>
+                            <span class="text-[11px] text-zinc-400">ملاحظة: الضغط على (استلام نقدي) يصدر سند صرف رسمي
+                                باسم المستلم ويصفر الرصيد المستحق</span>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="custom-table" id="employeesSalaryTable">
+                                <thead>
+                                    <tr>
+                                        <th>الاسم</th>
+                                        <th>الصفة ونظام الحساب</th>
+                                        <th>المعدل الأساسي</th>
+                                        <th>الرحلات / الأشهر</th>
+                                        <th>إجمالي المستحق</th>
+                                        <th>السلفيات المخصومة</th>
+                                        <th>صافي المتبقي للصرف</th>
+                                        <th>الفرع</th>
+                                        <th>الإجراءات والقبض النقدي</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>

@@ -1,0 +1,230 @@
+<section id="module-financials" class="tab-content hidden space-y-6">
+                    <div class="finance-summary-grid grid grid-cols-1 sm:grid-cols-4 gap-4" aria-label="ملخص الإدارة المالية">
+                        <div class="finance-summary-card bg-cardbg border border-bordergold p-4 rounded-2xl shadow">
+                            <span id="lblFin1" class="text-[11px] text-zinc-400 block">إجمالي التذاكر والشحن والتأشيرات
+                                المدفوعة</span>
+                            <strong id="finRevSum" class="text-lg font-black text-emerald-400">0 AED</strong>
+                        </div>
+                        <div class="finance-summary-card bg-cardbg border border-bordergold p-4 rounded-2xl shadow">
+                            <span class="text-[11px] text-zinc-400 block">مصروفات رحلات السائقين</span>
+                            <strong id="finDriverExpSum" class="text-lg font-black text-red-400">0 AED</strong>
+                        </div>
+                        <div class="finance-summary-card bg-cardbg border border-bordergold p-4 rounded-2xl shadow">
+                            <span id="lblFin3" class="text-[11px] text-zinc-400 block">سندات الصرف العامة
+                                والرواتب</span>
+                            <strong id="finExpensesSum" class="text-lg font-black text-red-400">0 AED</strong>
+                        </div>
+                        <div class="finance-summary-card finance-summary-net bg-cardbg border border-gold p-4 rounded-2xl shadow">
+                            <span id="lblFin4" class="text-[11px] text-gold block">صافي رصيد الصندوق العام (تذاكر وشحن
+                                وتأشيرات مدفوعة + سندات قبض)</span>
+                            <strong id="finNetBoxSum" class="text-lg font-black text-amber-400">0 AED</strong>
+                        </div>
+                    </div>
+
+                    <!-- DAILY CASH REGISTER CLOSING & HANDOVER REPORT (إغلاق الصندوق اليومي وتصفية الوردية) -->
+                    <div class="bg-cardbg border border-bordergold p-5 rounded-2xl shadow-xl space-y-4">
+                        <div class="finance-control-bar flex justify-between items-center border-b border-zinc-800 pb-3 flex-wrap gap-2">
+                            <h3 class="text-gold font-bold text-sm flex items-center gap-2">
+                                <i class="fa-solid fa-cash-register text-emerald-400"></i>
+                                <span>تقرير إغلاق الصندوق اليومي وتصفية الوردية (Daily Cash Handover)</span>
+                            </h3>
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <input type="date" id="dailyCloseDate" onchange="renderDailyCashClosingReport()"
+                                    class="bg-darkbg border border-gold text-gold text-xs px-3 py-1.5 rounded-xl font-bold outline-none">
+                                <button onclick="exportDailyClosingPDF()"
+                                    class="bg-red-600 hover:bg-red-500 text-white px-3 py-1.5 rounded-xl text-xs font-bold shadow"><i
+                                        class="fa-solid fa-file-pdf ml-1"></i> تصدير كشف الإغلاق PDF</button>
+                            </div>
+                        </div>
+                        <div id="dailyClosingCaptureArea"
+                            class="grid grid-cols-1 sm:grid-cols-5 gap-3 bg-darkbg p-4 rounded-xl border border-zinc-800 text-xs">
+                            <div class="bg-zinc-900 p-3 rounded-xl border border-zinc-800">
+                                <span class="text-zinc-400 block mb-1">تذاكر اليوم المدفوعة:</span>
+                                <strong id="dcTicketsPaid" class="text-emerald-400 text-base font-black">0 AED</strong>
+                            </div>
+                            <div class="bg-zinc-900 p-3 rounded-xl border border-zinc-800">
+                                <span class="text-zinc-400 block mb-1">شحن اليوم المدفوع:</span>
+                                <strong id="dcCargoPaid" class="text-indigo-400 text-base font-black">0 AED</strong>
+                            </div>
+                            <div class="bg-zinc-900 p-3 rounded-xl border border-zinc-800">
+                                <span class="text-zinc-400 block mb-1">تأشيرات وسندات قبض:</span>
+                                <strong id="dcOtherIn" class="text-amber-300 text-base font-black">0 AED</strong>
+                            </div>
+                            <div class="bg-zinc-900 p-3 rounded-xl border border-zinc-800">
+                                <span class="text-zinc-400 block mb-1">مصروفات وسندات صرف اليوم:</span>
+                                <strong id="dcTotalOut" class="text-red-400 text-base font-black">0 AED</strong>
+                            </div>
+                            <div class="bg-zinc-900 p-3 rounded-xl border border-gold">
+                                <span class="text-gold font-bold block mb-1">صافي النقدية للتسليم اليوم:</span>
+                                <strong id="dcNetCash" class="text-gold text-base font-black">0 AED</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- DEPARTED TRIPS ACCOUNTS MANAGEMENT -->
+                    <div class="bg-cardbg border border-bordergold p-5 rounded-2xl shadow-xl space-y-4">
+                        <div class="finance-control-bar flex justify-between items-center border-b border-zinc-800 pb-3 flex-wrap gap-2">
+                            <h3 class="text-gold font-bold text-sm flex items-center gap-2">
+                                <i class="fa-solid fa-plane-departure text-indigo-400"></i>
+                                <span>الرحلات التي غادرت وإدارة حساباتها (إضافة وتعديل التذاكر وفواتير الشحن
+                                    والمدفوعات)</span>
+                            </h3>
+                            <span class="text-[11px] text-zinc-400">الوسيلة الوحيدة لعرض وإضافة تذكرة أو فاتورة لرحلة
+                                غادرت هي من هنا عبر الإدارة المالية</span>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="custom-table" id="finDepartedTripsTable">
+                                <thead>
+                                    <tr>
+                                        <th>معرف الرحلة</th>
+                                        <th>تاريخ الرحلة</th>
+                                        <th>خط السير / الوجهة</th>
+                                        <th>الباص والسائق</th>
+                                        <th>عدد التذاكر</th>
+                                        <th>فواتير الشحن</th>
+                                        <th>إجمالي المبالغ</th>
+                                        <th>المدفوع</th>
+                                        <th>المتبقي / الآجل</th>
+                                        <th>مصروفات السائق</th>
+                                        <th>صافي ربح الرحلة</th>
+                                        <th>إدارة وحسابات الرحلة</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- VOUCHERS -->
+                    <div class="bg-cardbg border border-bordergold p-5 rounded-2xl shadow-xl space-y-4">
+                        <h3 id="lblVoucherHead" class="text-gold font-bold text-sm border-b border-zinc-800 pb-3">سندات
+                            القبض والصرف والنثريات</h3>
+                        <form id="voucherForm" onsubmit="handleSaveVoucher(event)"
+                            class="grid grid-cols-1 sm:grid-cols-6 gap-3 bg-darkbg p-4 rounded-xl border border-zinc-800">
+                            <select id="vType"
+                                class="bg-zinc-900 border border-zinc-700 rounded p-2 text-xs text-zinc-200">
+                                <option value="قبض">سند قبض</option>
+                                <option value="صرف">سند صرف</option>
+                            </select>
+                            <input type="date" id="vDate"
+                                class="bg-zinc-900 border border-gold rounded p-2 text-xs text-gold font-bold">
+                            <input type="number" step="any" id="vAmount" required placeholder="المبلغ"
+                                class="bg-zinc-900 border border-gold rounded p-2 text-xs text-gold font-bold">
+                            <input type="text" id="vReceiver" required
+                                placeholder="اسم المستلم (المستلم/المسلم إليه)..."
+                                class="bg-zinc-900 border border-zinc-700 rounded p-2 text-xs text-zinc-200">
+                            <input type="text" id="vDesc" required placeholder="البيان والتفاصيل..."
+                                class="bg-zinc-900 border border-zinc-700 rounded p-2 text-xs text-zinc-200 sm:col-span-2">
+                            <button type="submit" id="btnSaveV"
+                                class="gold-gradient-bg text-black font-extrabold py-2 rounded text-xs sm:col-span-6 shadow">حفظ
+                                السند المالي</button>
+                        </form>
+                        <div class="overflow-x-auto">
+                            <table class="custom-table" id="vouchersTable">
+                                <thead>
+                                    <tr>
+                                        <th id="thV1">النوع</th>
+                                        <th id="thV2">التاريخ</th>
+                                        <th id="thV3">اسم المستلم</th>
+                                        <th id="thV4">البيان</th>
+                                        <th id="thV5">المبلغ</th>
+                                        <th id="thV7">الفرع</th>
+                                        <th id="thV8">إجراء</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- سجل المصروفات العامة -->
+                    <div class="bg-cardbg border border-bordergold p-5 rounded-2xl shadow-xl space-y-4">
+                        <h3 class="text-gold font-bold text-sm border-b border-zinc-800 pb-3">سجل المصروفات العامة (يشمل
+                            مصروفات رحلات السائقين المرحلة تلقائياً)</h3>
+                        <div class="overflow-x-auto">
+                            <table class="custom-table" id="expensesLogTable">
+                                <thead>
+                                    <tr>
+                                        <th>مصدر المصروف</th>
+                                        <th>التاريخ</th>
+                                        <th>البيان والتفاصيل</th>
+                                        <th>المبلغ</th>
+                                        <th>الفرع</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- DEBT INVOICES REGISTER -->
+                    <div class="bg-cardbg border border-bordergold p-5 rounded-2xl shadow-xl space-y-4">
+                        <div class="flex justify-between items-center border-b border-zinc-800 pb-3">
+                            <h3 id="lblDebtHead" class="text-gold font-bold text-sm"><i
+                                    class="fa-solid fa-file-invoice-dollar ml-1"></i> فواتير وحسابات الذمم الآجلة</h3>
+                            <button onclick="switchFinancialSubTab('create-debt-inv')" id="btnNewDebt"
+                                class="gold-gradient-bg text-black px-3 py-1.5 rounded-xl text-xs font-bold">إنشاء
+                                فاتورة آجل</button>
+                        </div>
+                        <div id="fin-sub-debts">
+                            <div class="overflow-x-auto">
+                                <table class="custom-table" id="debtInvoicesTable">
+                                    <thead>
+                                        <tr>
+                                            <th id="thD1">الفاتورة</th>
+                                            <th id="thD2">التاريخ</th>
+                                            <th id="thD3">الاسم</th>
+                                            <th id="thD4">الهاتف</th>
+                                            <th id="thD5">المجموع</th>
+                                            <th id="thD6">المدفوع</th>
+                                            <th id="thD7">المتبقي</th>
+                                            <th id="thD8">الفرع</th>
+                                            <th id="thD9">إجراءات / PDF</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div id="fin-sub-create-debt-inv"
+                            class="hidden bg-darkbg p-4 rounded-xl border border-gold space-y-3">
+                            <h4 id="lblDebtFormTitle" class="text-gold font-bold text-xs">إصدار فاتورة حساب آجل جديدة
+                                (يبدأ تسلسلها تلقائياً من الرقم التالي)</h4>
+                            <form id="debtInvoiceForm" onsubmit="handleSaveDebtInvoice(event)" class="space-y-3">
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                    <input type="text" id="debtInvNo" required
+                                        class="bg-zinc-900 border border-gold p-2 text-xs text-gold font-bold rounded outline-none">
+                                    <input type="date" id="debtInvDate"
+                                        class="bg-zinc-900 border border-gold p-2 text-xs font-bold rounded">
+                                    <input type="text" id="debtInvCustomerName" required placeholder="اسم العميل"
+                                        class="bg-zinc-900 border border-zinc-700 p-2 text-xs rounded">
+                                </div>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <input type="tel" id="debtInvCustomerPhone" required placeholder="رقم الهاتف"
+                                        class="bg-zinc-900 border border-zinc-700 p-2 text-xs rounded">
+                                    <input type="text" id="debtInvCustomerAddress" required placeholder="العنوان"
+                                        class="bg-zinc-900 border border-zinc-700 p-2 text-xs rounded">
+                                </div>
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                    <input type="number" step="any" id="debtInvSubTotal" required
+                                        placeholder="المجموع الكلي"
+                                        class="bg-zinc-900 border border-zinc-700 p-2 text-xs rounded">
+                                    <input type="number" step="any" id="debtInvPaidAmount" required
+                                        placeholder="المدفوع"
+                                        class="bg-zinc-900 border border-emerald-500 p-2 text-xs text-emerald-400 rounded"
+                                        value="0">
+                                    <input type="number" step="any" id="debtInvNetTotal" required placeholder="المتبقي"
+                                        class="bg-zinc-900 border border-gold p-2 text-xs text-gold font-bold rounded">
+                                </div>
+                                <div class="flex gap-2">
+                                    <button type="submit" id="btnSaveDebt"
+                                        class="gold-gradient-bg text-black font-bold px-4 py-2 rounded text-xs">حفظ
+                                        وإصدار</button>
+                                    <button type="button" onclick="switchFinancialSubTab('debts')" id="btnCancelDebt"
+                                        class="bg-zinc-800 text-zinc-300 px-4 py-2 rounded text-xs">إغلاق</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </section>

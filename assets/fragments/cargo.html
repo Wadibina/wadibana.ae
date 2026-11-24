@@ -1,0 +1,189 @@
+<section id="module-cargo" class="tab-content hidden space-y-6">
+                    <div
+                        class="bg-cardbg border border-bordergold p-4 rounded-2xl shadow-xl flex flex-col sm:flex-row justify-between items-center gap-3">
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-boxes-packing text-gold text-lg"></i>
+                            <div>
+                                <h3 id="lblCargoHeader" class="text-xs font-bold text-gold">إدارة فواتير الشحن والأصناف
+                                    (مرتبة من الأكبر للأصغر برقم الفاتورة تلقائياً)</h3>
+                                <p id="lblCargoSub" class="text-[11px] text-zinc-400">عند الحفظ يتم تنزيل صورة الفاتورة
+                                    تلقائياً بتنسيق A5 وباسم (فاتورة + الرقم)</p>
+                            </div>
+                        </div>
+                        <button onclick="openCargoManifestModal()" id="btnManifestC"
+                            class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-3 py-2 rounded-xl text-xs shadow"><i
+                                class="fa-solid fa-file-lines ml-1"></i> كشف مانفيستو الشحن حسب التاريخ</button>
+                    </div>
+
+                    <div class="bg-cardbg border border-bordergold p-5 rounded-2xl shadow-xl space-y-4">
+                        <h2
+                            class="text-gold font-extrabold text-base border-b border-zinc-800 pb-3 flex justify-between items-center">
+                            <span><i class="fa-solid fa-boxes-packing ml-1"></i> <span id="cargoFormTitle">فاتورة أمتعة
+                                    وبضائع (بأرقام كسرية دقيقة للأسعار)</span></span>
+                            <button id="cancelEditCargoBtn" onclick="resetCargoForm()"
+                                class="hidden text-xs text-red-400 font-bold bg-red-950/40 border border-red-800 px-2.5 py-1 rounded-lg">إغلاق
+                                التعديل</button>
+                        </h2>
+                        <form id="cargoForm" onsubmit="handleSaveCargo(event)" class="space-y-4">
+                            <input type="hidden" id="cargoEditId" value="">
+                            <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                                <div>
+                                    <label id="lblInvNo" class="block text-xs text-gold mb-1 font-bold">رقم الفاتورة
+                                        *</label>
+                                    <input type="text" id="cargoInvNo" required
+                                        class="w-full bg-darkbg border border-gold font-bold text-gold rounded-xl px-3 py-2 text-xs outline-none">
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-gold mb-1 font-bold">ربط برحلة مجدولة
+                                        (اختياري)</label>
+                                    <select id="cargoTripSelect" onchange="onTripSelectedForCargo()"
+                                        class="w-full bg-darkbg border border-gold font-bold text-gold rounded-xl px-3 py-2 text-xs outline-none">
+                                        <option value="">-- اختر الرحلة المرتبطة --</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label id="lblInvDate" class="block text-xs text-gold mb-1 font-bold">تاريخ الفاتورة
+                                        (تقويم منسدل)</label>
+                                    <input type="date" id="cargoDate"
+                                        class="w-full bg-darkbg border border-gold rounded-xl px-3 py-2 text-xs text-zinc-100 font-bold">
+                                </div>
+                                <div>
+                                    <label id="lblInvStatus" class="block text-xs text-zinc-400 mb-1">حالة السداد
+                                        *</label>
+                                    <select id="cargoPaymentStatus"
+                                        class="w-full bg-darkbg border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-200">
+                                        <option value="مدفوع">مدفوع</option>
+                                        <option value="أجل بالامارات">أجل بالامارات</option>
+                                        <option value="الدفع باليمن">الدفع باليمن</option>
+                                        <option value="مؤجل باليمن">مؤجل باليمن</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div class="bg-darkbg p-3 rounded-xl border border-zinc-800 space-y-2">
+                                    <span id="lblSenderBox" class="text-xs font-bold text-gold">بيانات المرسل</span>
+                                    <input type="text" id="cargoSenderName" required placeholder="اسم المرسل"
+                                        class="w-full bg-zinc-900 border border-zinc-800 rounded p-2 text-xs">
+                                    <input type="tel" id="cargoSenderPhone" required placeholder="رقم الهاتف"
+                                        class="w-full bg-zinc-900 border border-zinc-800 rounded p-2 text-xs">
+                                    <input type="text" id="cargoSenderAddress" required placeholder="العنوان"
+                                        class="w-full bg-zinc-900 border border-zinc-800 rounded p-2 text-xs"
+                                        value="عجمان">
+                                </div>
+                                <div class="bg-darkbg p-3 rounded-xl border border-zinc-800 space-y-2">
+                                    <span id="lblReceiverBox" class="text-xs font-bold text-emerald-400">بيانات
+                                        المستلم</span>
+                                    <input type="text" id="cargoReceiverName" required placeholder="اسم المستلم"
+                                        class="w-full bg-zinc-900 border border-zinc-800 rounded p-2 text-xs">
+                                    <input type="tel" id="cargoReceiverPhone" required placeholder="رقم الهاتف"
+                                        class="w-full bg-zinc-900 border border-zinc-800 rounded p-2 text-xs">
+                                    <input type="text" id="cargoReceiverAddress" required placeholder="العنوان"
+                                        class="w-full bg-zinc-900 border border-zinc-800 rounded p-2 text-xs"
+                                        value="عدن">
+                                </div>
+                            </div>
+
+                            <div class="bg-darkbg p-4 rounded-xl border border-zinc-800 space-y-3">
+                                <div class="flex justify-between items-center border-b border-zinc-800 pb-2">
+                                    <span id="lblItemsList" class="text-xs font-bold text-gold"><i
+                                            class="fa-solid fa-list-check ml-1"></i> أصناف الأمتعة (يدعم الأرقام الكسرية
+                                        الدقيقة)</span>
+                                    <button type="button" onclick="addCargoItemRow()" id="btnAddItem"
+                                        class="bg-gold text-black font-extrabold px-3 py-1 rounded text-xs hover:bg-gold-400"><i
+                                            class="fa-solid fa-plus ml-1"></i> إضافة صنف</button>
+                                </div>
+                                <div class="overflow-x-auto">
+                                    <table class="w-full text-right text-xs" id="cargoItemsBuilderTable"
+                                        style="direction: inherit;">
+                                        <thead>
+                                            <tr class="text-zinc-400 border-b border-zinc-800">
+                                                <th class="p-2" id="thBDesc">الوصف</th>
+                                                <th class="p-2 w-24" id="thBQty">العدد</th>
+                                                <th class="p-2 w-40" id="thBPrice">السعر الإجمالي للصنف (كسري)</th>
+                                                <th class="p-2 w-12 text-center" id="thBDel">حذف</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="cargoItemsRowsContainer"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- صور الشحنة للحفظ الداخلي فقط، ولا تظهر في مخرجات الفاتورة -->
+                            <div class="bg-darkbg p-4 rounded-xl border border-dashed border-gold/60 space-y-3">
+                                <div class="flex justify-between items-center flex-wrap gap-2">
+                                    <label class="text-xs font-bold text-gold flex items-center gap-1.5">
+                                        <i class="fa-solid fa-images text-base"></i>
+                                        <span>صور الأغراض المشحونة (داخلية فقط)</span>
+                                    </label>
+                                    <label for="cargoImagesInput"
+                                        class="bg-zinc-800 hover:bg-zinc-700 text-gold border border-gold/40 px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition">
+                                        <i class="fa-solid fa-camera ml-1"></i> اختيار صور
+                                    </label>
+                                    <input type="file" id="cargoImagesInput" accept="image/*" multiple
+                                        onchange="handleCargoImagesSelect(event)" class="hidden">
+                                </div>
+                                <div id="cargoImagesPreviewGrid" class="grid grid-cols-3 sm:grid-cols-6 gap-2 hidden"></div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs text-zinc-300 mb-1 font-bold">ملاحظات فاتورة الشحن
+                                    (اختياري)</label>
+                                <input type="text" id="cargoNotes"
+                                    placeholder="أدخل أي ملاحظات إضافية على الشحنة أو التسليم..."
+                                    class="w-full bg-darkbg border border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-200 outline-none">
+                            </div>
+
+                            <div
+                                class="flex justify-between items-center bg-zinc-900 p-4 rounded-xl border border-gold">
+                                <span id="lblTotalCalc" class="text-xs font-bold text-zinc-300">الإجمالي النهائي المحسوب
+                                    للأصناف:</span>
+                                <span id="cargoCalculatedTotal" class="text-lg font-black text-gold">0 AED</span>
+                                <input type="hidden" id="cargoManualTotal" value="0">
+                            </div>
+
+                            <button type="submit" id="cargoSubmitBtn"
+                                class="w-full gold-gradient-bg text-black font-black py-3 rounded-xl shadow">حفظ فاتورة
+                                الشحن وتنزيل الصورة</button>
+
+                            <div id="cargoEditAuditBox"
+                                class="hidden bg-zinc-900/90 border border-amber-500/40 rounded-xl p-3 text-xs text-zinc-300 mt-3">
+                                <div class="font-bold text-gold mb-1.5 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-clock-rotate-left"></i> سجل التواريخ والمستخدمين (من الإنشاء
+                                    حتى آخر تعديل):
+                                </div>
+                                <div id="cargoEditAuditList" class="space-y-1 text-[11px] text-zinc-400"></div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="bg-cardbg border border-bordergold rounded-2xl overflow-hidden shadow-xl">
+                        <div class="p-4 border-b border-zinc-800 flex justify-between items-center">
+                            <span id="lblCargoLog" class="font-bold text-gold text-xs">سجل فواتير الشحن والأصناف (ترتيب
+                                من الأكبر للأصغر)</span>
+                            <button onclick="exportExcel('cargo')"
+                                class="bg-emerald-600 text-white px-3 py-1.5 rounded-xl text-xs font-bold"><i
+                                    class="fa-solid fa-file-excel"></i> Excel</button>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="custom-table" id="cargoTable">
+                                <thead>
+                                    <tr>
+                                        <th id="thC1">الفاتورة</th>
+                                        <th id="thC2">التاريخ</th>
+                                        <th id="thC3">المرسل</th>
+                                        <th id="thC4">المستلم وعنوانه</th>
+                                        <th>الرحلة المرتبطة</th>
+                                        <th id="thC5">عدد الأصناف</th>
+                                        <th id="thC6">الإجمالي</th>
+                                        <th>ملاحظات</th>
+                                        <th id="thC7">الحالة</th>
+                                        <th id="thC8">الفرع</th>
+                                        <th id="thC9">إجراءات / طباعة</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>

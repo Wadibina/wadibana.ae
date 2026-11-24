@@ -1,0 +1,98 @@
+<section id="module-dashboard" class="tab-content space-y-6">
+    <header class="wb-hero" aria-labelledby="wbGreeting">
+        <div class="z-10">
+            <div class="wb-kicker">WADI BINA · مركز العمليات</div>
+            <h2 id="wbGreeting">مساحة العمل اليومية</h2>
+            <p id="wbContext">متابعة الرحلات والتذاكر والشحن من مكان واحد</p>
+            <div id="wbDate" class="wb-date"></div>
+        </div>
+        <div class="wb-actions" aria-label="إجراءات سريعة">
+            <button id="wbTripQuickAction" class="wb-action wb-action-primary" onclick="openWorkflowModule('trips','tripForm')"><i class="fa-solid fa-route ml-1"></i> رحلة جديدة</button>
+            <button class="wb-action" onclick="openWorkflowModule('passengers','passengerForm')"><i class="fa-solid fa-ticket ml-1"></i> حجز تذكرة</button>
+            <button class="wb-action" onclick="openWorkflowModule('cargo','cargoForm')"><i class="fa-solid fa-box ml-1"></i> تسجيل شحنة</button>
+            <button class="wb-action" onclick="focusWorkflowSearch()"><i class="fa-solid fa-magnifying-glass ml-1"></i> بحث سريع <span class="wb-shortcut-label opacity-75">Ctrl K</span></button>
+        </div>
+    </header>
+    <div class="wb-workgrid" aria-label="ملخص العمل اليومي">
+        <section class="wb-panel" aria-labelledby="wbAttentionHeading">
+            <div class="wb-panel-head"><div><h3 id="wbAttentionHeading" class="wb-panel-title">متابعة تحتاج انتباهك</h3><p class="wb-panel-sub">ملخص مباشر من بيانات النظام الحالية</p></div><span class="wb-command-hint"><kbd>Ctrl</kbd> + <kbd>K</kbd> للبحث</span></div>
+            <div id="wbAttentionList" class="wb-alert-list" aria-live="polite"><div class="wb-empty">جارٍ قراءة مؤشرات التشغيل…</div></div>
+        </section>
+        <section class="wb-panel" aria-labelledby="wbTasksHeading">
+            <div class="wb-panel-head"><div><h3 id="wbTasksHeading" class="wb-panel-title">قائمة مهامي</h3><p class="wb-panel-sub">خاصة بهذا الحساب وعلى هذا الجهاز</p></div><i class="fa-regular fa-square-check text-emerald-700 text-lg"></i></div>
+            <form id="wbTaskForm" class="wb-task-add"><label for="wbTaskInput" class="sr-only">مهمة جديدة</label><input id="wbTaskInput" maxlength="120" placeholder="أضف تذكيراً شخصياً…" autocomplete="off"><button type="submit"><i class="fa-solid fa-plus ml-1"></i>إضافة</button></form>
+            <div id="wbTaskList" class="wb-task-list mt-3" aria-live="polite"></div>
+            <div class="wb-panel-foot"><span>لا تتم مزامنة المهام مع الخادم</span><button type="button" id="wbClearDone" class="text-emerald-800 font-bold">إزالة المكتمل</button></div>
+        </section>
+    </div>
+
+    <div class="wb-section-heading">
+        <div>
+            <h3>لمحة سريعة</h3>
+            <p>مؤشرات العمل حسب الفرع المحدد</p>
+        </div>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 wb-kpi-grid">
+        <div
+            class="bg-cardbg border border-bordergold p-4 rounded-2xl shadow-xl flex items-center justify-between">
+            <div>
+                <span id="lblStat1" class="text-zinc-400 text-xs block">إجمالي حجوزات الركاب</span>
+                <h3 id="dashTotalPassengers" class="text-xl font-black text-gold mt-1">0</h3>
+            </div>
+            <div
+                class="w-10 h-10 rounded-xl bg-gold/10 flex items-center justify-center text-gold text-lg">
+                <i class="fa-solid fa-ticket"></i></div>
+        </div>
+        <div
+            class="bg-cardbg border border-bordergold p-4 rounded-2xl shadow-xl flex items-center justify-between">
+            <div>
+                <span class="text-zinc-400 text-xs block">إجمالي مصروفات السائقين</span>
+                <h3 id="dashTotalDriversExp" class="text-xl font-black text-red-400 mt-1">0 AED</h3>
+            </div>
+            <div
+                class="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center text-red-400 text-lg">
+                <i class="fa-solid fa-wallet"></i></div>
+        </div>
+        <div
+            class="bg-cardbg border border-bordergold p-4 rounded-2xl shadow-xl flex items-center justify-between">
+            <div>
+                <span id="lblStat3" class="text-zinc-400 text-xs block">إجمالي المصروفات العامة</span>
+                <h3 id="dashTotalExpenses" class="text-xl font-black text-red-400 mt-1">0 AED</h3>
+            </div>
+            <div
+                class="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center text-red-400 text-lg">
+                <i class="fa-solid fa-receipt"></i></div>
+        </div>
+        <div
+            class="bg-cardbg border border-gold p-4 rounded-2xl shadow-xl flex items-center justify-between bg-opacity-50">
+            <div>
+                <span id="lblStat4" class="text-gold text-xs block font-bold">صافي رصيد الصندوق
+                    العام</span>
+                <h3 id="dashNetProfit" class="text-xl font-black text-amber-300 mt-1">0 AED</h3>
+            </div>
+            <div
+                class="w-10 h-10 rounded-xl gold-gradient-bg flex items-center justify-center text-black text-lg">
+                <i class="fa-solid fa-chart-line"></i></div>
+        </div>
+    </div>
+
+    <div class="wb-section-heading wb-section-heading-spaced">
+        <div>
+            <h3>التحليل المالي</h3>
+            <p>مقارنة الإيرادات والمصروفات وحالات السداد</p>
+        </div>
+    </div>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 wb-chart-grid">
+        <div class="bg-cardbg border border-bordergold p-5 rounded-2xl shadow-xl">
+            <h3 id="lblChart1" class="text-gold font-bold text-xs mb-4 flex items-center gap-2"><i
+                    class="fa-solid fa-chart-column"></i> مقارنة الإيرادات والمصروفات المالية</h3>
+            <div class="relative h-64"><canvas id="financialBarChart"></canvas></div>
+        </div>
+        <div class="bg-cardbg border border-bordergold p-5 rounded-2xl shadow-xl">
+            <h3 id="lblChart2" class="text-gold font-bold text-xs mb-4 flex items-center gap-2"><i
+                    class="fa-solid fa-chart-pie"></i> نسب حالات سداد الفواتير والتذاكر</h3>
+            <div class="relative h-64 flex justify-center"><canvas id="paymentStatusPieChart"></canvas>
+            </div>
+        </div>
+    </div>
+</section>

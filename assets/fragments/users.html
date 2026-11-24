@@ -1,0 +1,83 @@
+<section id="module-users" class="tab-content hidden space-y-6">
+                    <div class="bg-cardbg border border-bordergold p-5 rounded-2xl shadow-xl space-y-4">
+                        <h3
+                            class="text-gold font-bold text-sm border-b border-zinc-800 pb-3 flex items-center justify-between">
+                            <span><i class="fa-solid fa-users-gear ml-1"></i> إدارة المستخدمين والموظفين</span>
+                        </h3>
+
+                        <form id="userForm" onsubmit="handleSaveUser(event)"
+                            class="bg-darkbg p-4 rounded-xl border border-zinc-800 space-y-3">
+                            <input type="hidden" id="userEditOriginalName" value="">
+                            <div class="grid grid-cols-1 sm:grid-cols-5 gap-3">
+                                <div>
+                                    <label class="block text-xs text-zinc-400 mb-1 font-bold">اسم المستخدم</label>
+                                    <input type="text" id="manageUsername" required
+                                        class="w-full bg-zinc-900 border border-zinc-700 rounded p-2 text-xs text-zinc-100"
+                                        placeholder="اسم المستخدم">
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-zinc-400 mb-1 font-bold">كلمة المرور</label>
+                                    <input type="password" id="managePassword" required minlength="6" autocomplete="new-password"
+                                        class="w-full bg-zinc-900 border border-gold rounded p-2 text-xs text-gold font-bold"
+                                        placeholder="كلمة المرور">
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-zinc-400 mb-1 font-bold">رقم الهاتف / واتساب</label>
+                                    <input type="tel" id="managePhone" autocomplete="tel" dir="ltr"
+                                        class="w-full bg-zinc-900 border border-zinc-700 rounded p-2 text-xs text-zinc-100"
+                                        placeholder="+9715XXXXXXXX">
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-zinc-400 mb-1 font-bold">الدور والصلاحية</label>
+                                    <select id="manageRole"
+                                        class="w-full bg-zinc-900 border border-zinc-700 rounded p-2 text-xs text-zinc-200 font-bold">
+                                        <option value="مالك">👑 مالك النظام</option>
+                                        <option value="مسؤول التقنية">مسؤول التقنية</option>
+                                        <option value="مدير عام">مدير عام</option>
+                                        <option value="محاسب رئيسي">محاسب رئيسي</option>
+                                        <option value="مدير فرع ومحاسب">مدير فرع ومحاسب</option>
+                                        <option value="مدير فرع">مدير فرع</option>
+                                        <option value="محاسب فرع">محاسب فرع</option>
+                                        <option value="موظف">موظف</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-zinc-400 mb-1 font-bold">فرع الشركة</label>
+                                    <select id="manageBranch"
+                                        class="w-full bg-zinc-900 border border-zinc-700 rounded p-2 text-xs text-zinc-200 font-bold">
+                                        <option value="فرع عجمان">فرع عجمان</option>
+                                        <option value="فرع ابوظبي">فرع ابوظبي</option>
+                                        <option value="فرع العين">فرع العين</option>
+                                        <option value="فرع عمان">فرع عمان</option>
+                                        <option value="فرع اليمن">فرع اليمن</option>
+                                        <option value="جميع الفروع">جميع الفروع</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <p class="text-xs text-zinc-400 leading-6">مسؤول التقنية والمدير العام يديران جميع الحسابات. مدير الفرع يضيف ويعدّل موظفي فرعه فقط؛ ولا يمكنه تغيير أدوارهم أو حذف الحسابات.</p>
+                            <div class="flex gap-2 pt-2">
+                                <button type="submit" id="userSubmitBtn"
+                                    class="gold-gradient-bg text-black font-bold px-4 py-2 rounded text-xs">إضافة مستخدم
+                                    جديد</button>
+                                <button type="button" onclick="resetUserForm()"
+                                    class="bg-zinc-800 text-zinc-300 px-4 py-2 rounded text-xs">إغلاق</button>
+                            </div>
+                        </form>
+
+                        <div class="overflow-x-auto">
+                            <table class="custom-table" id="usersTable">
+                                <thead>
+                                    <tr>
+                                        <th>اسم المستخدم</th>
+                                        <th>الصلاحية والوظيفة</th>
+                                        <th>الفرع التابع له</th>
+                                        <th>الهاتف / واتساب</th>
+                                        <th>حالة الحساب</th>
+                                        <th>إجراءات</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>

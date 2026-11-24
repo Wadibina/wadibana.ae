@@ -1,0 +1,91 @@
+<section id="module-buses" class="tab-content hidden space-y-6">
+                    <div class="bg-cardbg border border-bordergold p-5 rounded-2xl shadow-xl space-y-4">
+                        <div class="flex justify-between items-center border-b border-zinc-800 pb-3">
+                            <h3 class="text-gold font-extrabold text-sm flex items-center gap-2">
+                                <i class="fa-solid fa-bus-simple text-gold"></i>
+                                <span id="busFormTitle">تسجيل باص جديد في الأسطول وتعيين السائق الموكل</span>
+                            </h3>
+                            <button id="cancelEditBusBtn" onclick="resetBusForm()"
+                                class="hidden text-xs text-red-400 font-bold bg-red-950/40 border border-red-800 px-2.5 py-1 rounded-lg">إغلاق
+                                التعديل</button>
+                        </div>
+
+                        <form id="busForm" onsubmit="handleSaveBus(event)" class="space-y-4">
+                            <input type="hidden" id="busEditId" value="">
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-xs text-gold mb-1 font-bold">رقم اللوحة *</label>
+                                    <input type="text" id="busPlateNo" required placeholder="مثال: أبوظبي 45120 / VIP"
+                                        class="w-full bg-darkbg border border-gold rounded-xl p-2.5 text-xs text-zinc-100 outline-none font-bold">
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-gold mb-1 font-bold">لون الباص *</label>
+                                    <div class="flex gap-2">
+                                        <select id="busColorSelect" onchange="onBusColorSelectChange()"
+                                            class="w-1/2 bg-darkbg border border-gold rounded-xl p-2.5 text-xs text-gold font-bold outline-none">
+                                            <option value="أبيض">أبيض</option>
+                                            <option value="ذهبي">ذهبي</option>
+                                            <option value="فضي">فضي</option>
+                                            <option value="أسود">أسود</option>
+                                            <option value="أزرق">أزرق</option>
+                                            <option value="أحمر">أحمر</option>
+                                            <option value="custom">لون آخر...</option>
+                                        </select>
+                                        <input type="text" id="busColor" required value="أبيض" placeholder="اكتب اللون"
+                                            class="w-1/2 bg-darkbg border border-zinc-700 rounded-xl p-2.5 text-xs text-zinc-100 outline-none font-bold">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-emerald-400 mb-1 font-bold">السائق الموكل (من قسم
+                                        الرواتب والموظفين) *</label>
+                                    <select id="busDriverSelect" required
+                                        class="w-full bg-darkbg border border-emerald-500 rounded-xl p-2.5 text-xs text-emerald-300 font-bold outline-none">
+                                        <option value="">-- اختر السائق الموكل --</option>
+                                    </select>
+                                    <p class="text-[10px] text-zinc-400 mt-1">تُجلب الأسماء تلقائياً من السائقين
+                                        المسجلين في قسم الرواتب والموظفين.</p>
+                                </div>
+                            </div>
+
+                            <button type="submit" id="busSubmitBtn"
+                                class="w-full gold-gradient-bg text-black font-black py-3 rounded-xl text-xs shadow">
+                                <i class="fa-solid fa-plus ml-1"></i> حفظ وتسجيل الباص
+                            </button>
+
+                            <div id="busEditAuditBox"
+                                class="hidden bg-zinc-900/90 border border-amber-500/40 rounded-xl p-3 text-xs text-zinc-300 mt-2">
+                                <div class="font-bold text-gold mb-1 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-clock-rotate-left"></i> سجل التواريخ والمستخدمين:
+                                </div>
+                                <div id="busEditAuditList" class="space-y-1 text-[11px] text-zinc-400"></div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="bg-cardbg border border-bordergold rounded-2xl overflow-hidden shadow-xl">
+                        <div class="p-4 border-b border-zinc-800 flex justify-between items-center flex-wrap gap-2">
+                            <span class="font-bold text-gold text-xs"><i class="fa-solid fa-list-ul ml-1"></i> سجل
+                                الباصات المعتمدة والسائقين الموكلين</span>
+                            <button onclick="switchTab('trips')"
+                                class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-xl text-xs font-bold shadow">
+                                <i class="fa-solid fa-link ml-1"></i> الانتقال لربط الباصات بالرحلات
+                            </button>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="custom-table" id="busesTable">
+                                <thead>
+                                    <tr>
+                                        <th>م</th>
+                                        <th>رقم اللوحة</th>
+                                        <th>اللون</th>
+                                        <th>السائق الموكل</th>
+                                        <th>الرحلات المرتبطة</th>
+                                        <th>الفرع</th>
+                                        <th>الإجراءات</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>

@@ -1,0 +1,19 @@
+archive/
+target/
+.settings/
+.vscode/
+.project
+src/
+pom.xml
+bin/
+
+# Local credentials and private keys
+*.pem
+client_secret_*.json
+.env
+.env.*
+!.env.example
+WadiBina_Backup_*.json
+wadi-bana-b585b-default-rtdb-export*.json
+gemini-code-*
+node_modules/

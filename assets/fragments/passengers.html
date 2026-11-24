@@ -1,0 +1,220 @@
+<section id="module-passengers" class="tab-content hidden space-y-6">
+                    <div
+                        class="bg-cardbg border border-bordergold p-4 rounded-2xl shadow-xl flex flex-col sm:flex-row justify-between items-center gap-3">
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-calendar-day text-gold text-lg"></i>
+                            <div>
+                                <h3 id="lblPassHeader" class="text-xs font-bold text-gold">إدارة رحلات وتذاكر الركاب
+                                    والركاب الإضافيين (مرتبة تنازلياً برقم التذكرة الأكبر أولاً)</h3>
+                                <p id="lblPassSub" class="text-[11px] text-zinc-400">عند الحفظ يتم تنزيل صورة التذكرة
+                                    تلقائياً بتنسيق A5 وباسم (تذكرة + الرقم)</p>
+                            </div>
+                        </div>
+                        <button onclick="openManifestModal()" id="btnManifestP"
+                            class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-3 py-2 rounded-xl text-xs shadow"><i
+                                class="fa-solid fa-file-lines ml-1"></i> كشف الرحلة حسب التاريخ (Manifest)</button>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div
+                            class="lg:col-span-2 bg-cardbg border border-bordergold p-5 rounded-2xl shadow-xl space-y-4">
+                            <h2
+                                class="text-gold font-extrabold text-base border-b border-zinc-800 pb-3 flex items-center justify-between">
+                                <span><i class="fa-solid fa-ticket ml-1"></i> <span id="passFormTitle">إصدار تذكرة سفر
+                                        جديدة</span></span>
+                                <button id="cancelEditPassBtn" onclick="resetPassengerForm()"
+                                    class="hidden text-xs text-red-400 font-bold bg-red-950/40 border border-red-800 px-2.5 py-1 rounded-lg">إغلاق
+                                    التعديل</button>
+                            </h2>
+                            <form id="passengerForm" onsubmit="handleSavePassenger(event)" class="space-y-4">
+                                <input type="hidden" id="passEditId" value="">
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                    <div>
+                                        <label id="lblTktNo" class="block text-xs text-gold mb-1 font-bold">رقم التذكرة
+                                            (تلقائي) *</label>
+                                        <input type="text" id="passTicketNo" oninput="onPassengerCountChanged()"
+                                            required
+                                            class="w-full bg-zinc-900 border border-gold font-bold text-gold rounded-xl px-3 py-2 text-xs outline-none">
+                                    </div>
+                                    <div>
+                                        <label id="lblAgent" class="block text-xs text-gold mb-1 font-bold">ربط برحلة
+                                            مجدولة *</label>
+                                        <select id="passTripSelect" required onchange="onTripSelectedForTicket()"
+                                            class="w-full bg-darkbg border border-gold font-bold text-gold rounded-xl px-3 py-2 text-xs outline-none">
+                                            <option value="">-- اختر الرحلة أولاً --</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs text-gold mb-1 font-bold">اسم الوكيل *</label>
+                                        <input type="text" id="passAgent" required placeholder="اسم الوكيل أو الحاجز"
+                                            class="w-full bg-darkbg border border-gold rounded-xl px-3 py-2 text-xs text-zinc-200 outline-none"
+                                            value="أبو خالد">
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                    <div>
+                                        <label class="block text-xs text-gold mb-1 font-bold">تاريخ الرحلة (تقويم
+                                            منسدل)</label>
+                                        <input type="date" id="passDate" onchange="updateReportingTimeAutomatically()"
+                                            class="w-full bg-darkbg border border-gold rounded-xl px-3 py-2 text-xs text-zinc-100 outline-none font-bold">
+                                    </div>
+                                    <div>
+                                        <label id="lblFare" class="block text-xs text-gold mb-1 font-bold">الإجمالي
+                                            (درهم) *</label>
+                                        <input type="number" id="passManualTotal" required
+                                            class="w-full bg-darkbg border border-gold font-bold text-gold rounded-xl px-3 py-2 text-xs outline-none"
+                                            value="350">
+                                    </div>
+                                    <div>
+                                        <label id="lblCount" class="block text-xs text-zinc-400 mb-1">عدد الركاب
+                                            *</label>
+                                        <select id="passCount" onchange="onPassengerCountChanged()"
+                                            class="w-full bg-darkbg border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-200">
+                                            <option value="1">1 راكب</option>
+                                            <option value="2">2 ركاب</option>
+                                            <option value="3">3 ركاب</option>
+                                            <option value="4">4 ركاب</option>
+                                            <option value="6">6 ركاب</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="bg-darkbg p-3.5 rounded-xl border border-zinc-800 space-y-3">
+                                    <span id="lblMainPax" class="text-xs font-bold text-emerald-400 block"><i
+                                            class="fa-solid fa-user ml-1"></i> بيانات الراكب الرئيسي</span>
+                                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                        <input type="text" id="passName" required placeholder="الاسم الكامل"
+                                            class="bg-zinc-900 border border-zinc-800 rounded-xl p-2 text-xs text-zinc-200">
+                                        <input type="tel" id="passPhone" required placeholder="رقم الهاتف"
+                                            class="bg-zinc-900 border border-zinc-800 rounded-xl p-2 text-xs text-zinc-200">
+                                        <input type="text" id="passPassport" required placeholder="رقم الجواز / الهوية"
+                                            class="bg-zinc-900 border border-zinc-800 rounded-xl p-2 text-xs text-zinc-200">
+                                    </div>
+                                </div>
+
+                                <div id="extraPassengersContainer" class="space-y-3 hidden">
+                                    <span id="lblExtraPax" class="text-xs font-bold text-amber-400 block"><i
+                                            class="fa-solid fa-users ml-1"></i> بيانات الركاب الإضافيين (كل راكب برقم
+                                        تذكرة مستقل)</span>
+                                    <div id="extraPassengersRows" class="space-y-2"></div>
+                                </div>
+
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                    <div>
+                                        <label class="block text-xs text-gold mb-1 font-bold">مكان الانطلاق *</label>
+                                        <select id="passOrigin" onchange="updateReportingTimeAutomatically()"
+                                            class="w-full bg-darkbg border border-gold rounded-xl px-2.5 py-2 text-xs text-gold font-bold">
+                                            <option value="عجمان">عجمان</option>
+                                            <option value="بني ياس">بني ياس</option>
+                                            <option value="العين">العين</option>
+                                            <option value="عبري">عبري</option>
+                                            <option value="شحن">شحن</option>
+                                            <option value="المكلا">المكلا</option>
+                                            <option value="القيضة">القيضة</option>
+                                            <option value="عدن">عدن</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs text-zinc-400 mb-1">الوجهة *</label>
+                                        <select id="passDestination"
+                                            class="w-full bg-darkbg border border-zinc-800 rounded-xl px-2.5 py-2 text-xs text-zinc-200 font-bold">
+                                            <option value="عدن" selected>عدن</option>
+                                            <option value="المكلا">المكلا</option>
+                                            <option value="صنعاء">صنعاء</option>
+                                            <option value="القيضة">القيضة</option>
+                                            <option value="عمان">عمان</option>
+                                            <option value="بني ياس">بني ياس</option>
+                                            <option value="عجمان">عجمان</option>
+                                            <option value="العين">العين</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs text-zinc-400 mb-1">حالة السداد *</label>
+                                        <select id="passPayMethod"
+                                            class="w-full bg-darkbg border border-zinc-800 rounded-xl px-2.5 py-2 text-xs text-zinc-200">
+                                            <option value="مدفوع">مدفوع</option>
+                                            <option value="الدفع عند الباص">الدفع عند الباص</option>
+                                            <option value="مؤجل باليمن">مؤجل باليمن</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-xs text-amber-400 mb-1 font-bold">وقت الحضور (تلقائي
+                                            حسب مدينة الانطلاق والتاريخ) *</label>
+                                        <input type="text" id="passReportingTime" required
+                                            class="w-full bg-darkbg border border-amber-500/80 font-bold text-amber-300 rounded-xl px-3 py-2 text-xs outline-none"
+                                            value="4:00 عصراً">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs text-zinc-300 mb-1 font-bold">ملاحظات التذكرة
+                                            (اختياري)</label>
+                                        <input type="text" id="passNotes"
+                                            placeholder="أدخل أي ملاحظات خاصة بالتذكرة أو الراكب..."
+                                            class="w-full bg-darkbg border border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-200 outline-none">
+                                    </div>
+                                </div>
+                                <button type="submit" id="passSubmitBtn"
+                                    class="w-full gold-gradient-bg text-black font-black py-3 rounded-xl shadow-lg">حفظ
+                                    وإصدار التذكرة وتنزيل الصورة</button>
+
+                                <div id="passEditAuditBox"
+                                    class="hidden bg-zinc-900/90 border border-amber-500/40 rounded-xl p-3 text-xs text-zinc-300 mt-3">
+                                    <div class="font-bold text-gold mb-1.5 flex items-center gap-1.5">
+                                        <i class="fa-solid fa-clock-rotate-left"></i> سجل التواريخ والمستخدمين (من
+                                        الإنشاء حتى آخر تعديل):
+                                    </div>
+                                    <div id="passEditAuditList" class="space-y-1 text-[11px] text-zinc-400"></div>
+                                </div>
+                            </form>
+                        </div>
+
+                        <div
+                            class="bg-cardbg border border-bordergold p-5 rounded-2xl flex flex-col justify-between shadow-xl">
+                            <div class="space-y-4">
+                                <h3 id="lblPassStats" class="text-gold font-bold text-sm border-b border-zinc-800 pb-2">
+                                    إحصائيات التذاكر</h3>
+                                <div class="bg-zinc-900 p-3 rounded-xl border border-zinc-800 space-y-2 text-xs">
+                                    <div class="flex justify-between"><span id="lblTktCount">التذاكر
+                                            المحجوزة:</span><strong id="statTicketCount" class="text-gold">0</strong>
+                                    </div>
+                                    <div class="flex justify-between"><span id="lblTktRev">إجمالي
+                                            الإيرادات:</span><strong id="statTicketRevenue" class="text-emerald-400">0
+                                            AED</strong></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-cardbg border border-bordergold rounded-2xl overflow-hidden shadow-xl">
+                        <div class="p-4 border-b border-zinc-800 flex justify-between items-center">
+                            <span id="lblPassLog" class="font-bold text-gold text-xs">سجل جميع التذاكر والركاب الإضافيين
+                                (ترتيب من الأكبر للأصغر)</span>
+                            <button onclick="exportExcel('passengers')"
+                                class="bg-emerald-600 text-white px-3 py-1.5 rounded-xl text-xs font-bold"><i
+                                    class="fa-solid fa-file-excel"></i> Excel</button>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="custom-table" id="passengersTable">
+                                <thead>
+                                    <tr>
+                                        <th id="thP1">البوليصة</th>
+                                        <th id="thP2">الوكيل</th>
+                                        <th id="thP3">الاسم الرئيسي</th>
+                                        <th id="thP4">الركاب الإضافيون</th>
+                                        <th id="thP5">الهاتف</th>
+                                        <th id="thP6">المسار</th>
+                                        <th id="thP7">تاريخ الرحلة</th>
+                                        <th id="thP8">المبلغ</th>
+                                        <th>ملاحظات</th>
+                                        <th id="thP9">السداد</th>
+                                        <th id="thP10">الفرع</th>
+                                        <th id="thP11">إجراءات / طباعة</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
