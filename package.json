@@ -10,6 +10,7 @@
     "node": ">=20"
   },
   "dependencies": {
+    "@dataconnect/generated": "file:src/dataconnect-generated",
     "firebase": "^13.4.0"
   }
 }
