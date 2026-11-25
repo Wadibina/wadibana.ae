@@ -356,3 +356,40 @@ Generated sources: index.d.ts [8408B] esm\index.esm.js [5353B] esm\package.json 
 [error] [Firebase Plugin] error:  {}
 [info] [Firebase Plugin] Stopping SQL Connect toolkit
 [warn] !  SQL Connect Emulator has exited upon receiving signal: SIGINT 
+[debug] [2026-11-25T04:29:35.721Z] [Firebase Plugin] Activating Firebase extension.
+[info] [Firebase Plugin] Checked firebase-tools, is up to date!
+[debug] [2026-11-25T04:29:43.960Z] [Firebase Plugin] requireAuthWrapper
+[debug] [2026-11-25T04:29:43.965Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-11-25T04:29:43.966Z] > authorizing via signed-in user (speciallinestore@gmail.com)
+[debug] [2026-11-25T04:29:43.972Z] Checked if tokens are valid: true, expires at: 1795583363161
+[debug] [2026-11-25T04:29:43.973Z] Checked if tokens are valid: true, expires at: 1795583363161
+[debug] [2026-11-25T04:29:43.973Z] [Firebase Plugin] User found:  speciallinestore@gmail.com
+[info] [Firebase Plugin] (Core:Project) New user detected, fetching projects
+[debug] [2026-11-25T04:29:43.975Z] Checked if tokens are valid: true, expires at: 1795583363161
+[debug] [2026-11-25T04:29:43.977Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects pageSize=1000
+[debug] [2026-11-25T04:29:44.019Z] [Firebase Plugin] VSCode notification server listening on port 40001
+[info] [Firebase Plugin] Starting SQL Connect toolkit (version 3.4.29) on port 50001
+[debug] [2026-11-25T04:29:46.078Z] I1125 08:29:46.056534   14444 control.go:113] [projects/emulator/locations/emulator/services/wadibanaae 8625] UpdateResources(): done
+Main schema: sources: schema/schema.gql [1992B] 
+Connector "example": sources: example/mutations.gql [1243B] example/queries.gql [1801B] 
+ {"metadata":{"emulator":{"name":"dataconnect"},"message":"I1125 08:29:46.056534   14444 control.go:113] [projects/emulator/locations/emulator/services/wadibanaae 8625] UpdateResources(): done\nMain schema: sources: schema/schema.gql [1992B] \nConnector \"example\": sources: example/mutations.gql [1243B] example/queries.gql [1801B] \n"}}
+[debug] [2026-11-25T04:29:46.079Z] Ignoring unsupported arg: auto_download {"metadata":{"emulator":{"name":"dataconnect"},"message":"Ignoring unsupported arg: auto_download"}}
+[debug] [2026-11-25T04:29:46.080Z] Ignoring unsupported arg: port {"metadata":{"emulator":{"name":"dataconnect"},"message":"Ignoring unsupported arg: port"}}
+[debug] [2026-11-25T04:29:46.080Z] Starting SQL Connect Emulator with command {"binary":"C:\\Users\\user\\.cache\\firebase\\emulators\\dataconnect-emulator-3.4.29.exe","args":["--logtostderr","-v=2","dev","--listen=localhost:50001","--config_dir=c:\\Users\\user\\Desktop\\wadi-bina\\wadibana.ae\\dataconnect","--enable_output_schema_extensions=true","--enable_output_generated_sdk=true"],"optionalArgs":["listen","config_dir","enable_output_schema_extensions","enable_output_generated_sdk"],"joinArgs":true,"shell":false,"port":9399} {"metadata":{"emulator":{"name":"dataconnect"},"message":"Starting SQL Connect Emulator with command {\"binary\":\"C:\\\\Users\\\\user\\\\.cache\\\\firebase\\\\emulators\\\\dataconnect-emulator-3.4.29.exe\",\"args\":[\"--logtostderr\",\"-v=2\",\"dev\",\"--listen=localhost:50001\",\"--config_dir=c:\\\\Users\\\\user\\\\Desktop\\\\wadi-bina\\\\wadibana.ae\\\\dataconnect\",\"--enable_output_schema_extensions=true\",\"--enable_output_generated_sdk=true\"],\"optionalArgs\":[\"listen\",\"config_dir\",\"enable_output_schema_extensions\",\"enable_output_generated_sdk\"],\"joinArgs\":true,\"shell\":false,\"port\":9399}"}}
+[info] i  dataconnect: SQL Connect Emulator logging to dataconnect-debug.log {"metadata":{"emulator":{"name":"dataconnect"},"message":"SQL Connect Emulator logging to \u001b[1mdataconnect-debug.log\u001b[22m"}}
+[debug] [2026-11-25T04:29:47.459Z] I1125 08:29:46.152655   30348 load.go:31] Reloading schema and connectors...
+I1125 08:29:46.170223   30348 control.go:113] [projects/emulator/locations/emulator/services/wadibanaae 5820] UpdateResources(): done
+Main schema: sources: schema/schema.gql [1992B] 
+Connector "example": sources: example/mutations.gql [1243B] example/queries.gql [1801B] 
+I1125 08:29:46.187266   30348 codegen.go:102] [connector "example" javascriptSdk] Generating sources into "c:\\Users\\user\\Desktop\\wadi-bina\\wadibana.ae\\src\\dataconnect-generated"
+I1125 08:29:46.201928   30348 collector.go:107] schema extensions wrote into "c:\\Users\\user\\Desktop\\wadi-bina\\wadibana.ae\\dataconnect\\.dataconnect\\schema"
+Generated sources: main\query.gql [5099B] main\mutation.gql [13679B] prelude.gql [94538B] main\implicit.gql [1261B] main\input.gql [29309B] main\relation.gql [14318B] 
+I1125 08:29:46.213436   30348 collector.go:107] connector "example" javascriptSdk wrote into "c:\\Users\\user\\Desktop\\wadi-bina\\wadibana.ae\\src\\dataconnect-generated"
+Generated sources: .guides/config.json [236B] index.cjs.js [5897B] README.md [41090B] .guides/setup.md [584B] index.d.ts [8408B] esm\index.esm.js [5353B] esm\package.json [17B] package.json [615B] .guides/usage.md [1705B] 
+I1125 08:29:46.221159   30348 installsdk.go:55] Package @dataconnect/generated is already installed. Skipping installation
+I1125 08:29:46.221159   30348 load.go:109] Finished reloading
+I1125 08:29:46.246926   30348 dev.go:103] Listening on address (HTTP + gRPC): 127.0.0.1:50001
+ {"metadata":{"emulator":{"name":"dataconnect"},"message":"I1125 08:29:46.152655   30348 load.go:31] Reloading schema and connectors...\nI1125 08:29:46.170223   30348 control.go:113] [projects/emulator/locations/emulator/services/wadibanaae 5820] UpdateResources(): done\nMain schema: sources: schema/schema.gql [1992B] \nConnector \"example\": sources: example/mutations.gql [1243B] example/queries.gql [1801B] \nI1125 08:29:46.187266   30348 codegen.go:102] [connector \"example\" javascriptSdk] Generating sources into \"c:\\\\Users\\\\user\\\\Desktop\\\\wadi-bina\\\\wadibana.ae\\\\src\\\\dataconnect-generated\"\nI1125 08:29:46.201928   30348 collector.go:107] schema extensions wrote into \"c:\\\\Users\\\\user\\\\Desktop\\\\wadi-bina\\\\wadibana.ae\\\\dataconnect\\\\.dataconnect\\\\schema\"\nGenerated sources: main\\query.gql [5099B] main\\mutation.gql [13679B] prelude.gql [94538B] main\\implicit.gql [1261B] main\\input.gql [29309B] main\\relation.gql [14318B] \nI1125 08:29:46.213436   30348 collector.go:107] connector \"example\" javascriptSdk wrote into \"c:\\\\Users\\\\user\\\\Desktop\\\\wadi-bina\\\\wadibana.ae\\\\src\\\\dataconnect-generated\"\nGenerated sources: .guides/config.json [236B] index.cjs.js [5897B] README.md [41090B] .guides/setup.md [584B] index.d.ts [8408B] esm\\index.esm.js [5353B] esm\\package.json [17B] package.json [615B] .guides/usage.md [1705B] \nI1125 08:29:46.221159   30348 installsdk.go:55] Package @dataconnect/generated is already installed. Skipping installation\nI1125 08:29:46.221159   30348 load.go:109] Finished reloading\nI1125 08:29:46.246926   30348 dev.go:103] Listening on address (HTTP + gRPC): 127.0.0.1:50001\n"}}
+[debug] [2026-11-25T04:29:48.536Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects 200
+[debug] [2026-11-25T04:29:48.536Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects [omitted]
+[error] [Firebase Plugin] error:  {}
