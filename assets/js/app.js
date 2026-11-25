@@ -1,17 +1,17 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
-import { getDatabase, ref, onValue, set, get, query, orderByChild, equalTo } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js";
-import { getAuth, onAuthStateChanged, signInWithCustomToken, signOut } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
-import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-functions.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-app.js";
+import { getDatabase, ref, onValue, set, get, remove, query, orderByChild, equalTo } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-database.js";
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, updatePassword, signOut } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-auth.js";
+import { getAnalytics, isSupported as isAnalyticsSupported } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-analytics.js";
 import { parseOmanEvisaText, validateTransitRecord } from "./transit-parser.js";
 
 const { jsPDF } = window.jspdf;
 
 const firebaseConfig = window.firebaseConfig;
+const OWNER_EMAIL_DOMAIN_EXCEPTION_UID = 'udn6FSQNEVd0v5HDfnF0mmCxmw53';
 
 let useFirebase = true;
 let rtdb = null;
 let auth = null;
-let functionsClient = null;
 let firebaseInitError = null;
 try {
     const requiredFirebaseKeys = ['apiKey', 'authDomain', 'databaseURL', 'projectId', 'appId'];
@@ -22,7 +22,11 @@ try {
     const app = initializeApp(firebaseConfig);
     rtdb = getDatabase(app);
     auth = getAuth(app);
-    functionsClient = getFunctions(app);
+    isAnalyticsSupported()
+        .then(supported => {
+            if (supported) getAnalytics(app);
+        })
+        .catch(error => console.error("Firebase Analytics initialization failed:", error));
 } catch (e) {
     console.error("Firebase initialization failed:", e);
     firebaseInitError = e;
@@ -234,7 +238,8 @@ function serializeUserProfile(profile) {
         branchId: branchCode,
         active: profile.active !== false,
         hidden: profile.hidden === true,
-        phone: String(profile.phone || '').trim()
+        phone: String(profile.phone || '').trim(),
+        email: String(profile.email || '').trim().toLowerCase()
     };
 }
 
@@ -290,8 +295,8 @@ const translations = {
         pageTitle: 'شركة وادي بناء للنقل الدولي | لوحة التحكم والنظام الموحد',
         lgTitle: 'تسجيل الدخول للنظام الموحد',
         lgSub: 'أدخل بيانات الحساب المعتمدة للوصول للوحة التحكم',
-        lgUserLbl: 'اسم المستخدم', loginUser: 'اسم المستخدم', lgPassLbl: 'كلمة المرور', lgBtn: 'دخول النظام',
-        headTitle: 'شركة وادي بناء للنقل الدولي', headSub: 'النظام الموحد الشامل (Firebase v13.2.0)',
+        lgUserLbl: 'البريد الإلكتروني', loginUser: 'بريد الشركة (name@swd.ae)', lgPassLbl: 'كلمة المرور', lgBtn: 'دخول النظام',
+        headTitle: 'شركة وادي بناء للنقل الدولي', headSub: 'النظام الموحد الشامل (Firebase v13.4.0)',
         btnBackup: 'نسخة JSON', btnBackupPDF: 'نسخة احتياطية PDF', btnRestore: 'استرجاع JSON', btnRestorePDF: 'استعادة من PDF', btnLogout: 'خروج',
         tDashboard: 'لوحة التحكم', tPassengers: 'التذاكر والركاب', tCargo: 'فواتير الشحن', tFin: 'الإدارة المالية',
         searchPh: 'بحث ذكي: رقم البوليصة، اسم العميل، أو الصنف...', btnResetSearch: 'إلغاء',
@@ -303,8 +308,8 @@ const translations = {
         pageTitle: 'Wadi Bina Overland Transport | Unified System & Dashboard',
         lgTitle: 'Unified System Login',
         lgSub: 'Enter approved credentials to access the control panel',
-        lgUserLbl: 'Username', loginUser: 'Username', lgPassLbl: 'Password', lgBtn: 'Login',
-        headTitle: 'Wadi Bina Overland Transport', headSub: 'Comprehensive Unified System (Firebase v13.2.0)',
+        lgUserLbl: 'Email address', loginUser: 'Company email (name@swd.ae)', lgPassLbl: 'Password', lgBtn: 'Login',
+        headTitle: 'Wadi Bina Overland Transport', headSub: 'Comprehensive Unified System (Firebase v13.4.0)',
         btnBackup: 'JSON Backup', btnBackupPDF: 'PDF Backup', btnRestore: 'Restore JSON', btnRestorePDF: 'Restore PDF', btnLogout: 'Logout',
         tDashboard: 'Dashboard', tPassengers: 'Tickets & Passengers', tCargo: 'Cargo Invoices', tFin: 'Financial Management',
         searchPh: 'Smart search: Policy No, Client name, Item...', btnResetSearch: 'Reset',
@@ -339,6 +344,15 @@ function canManageAllUsers() {
     return ['owner', 'it_admin', 'gm'].includes(getCurrentRoleCode());
 }
 
+function canManageTargetRole(targetRole) {
+    const role = getCurrentRoleCode();
+    const target = ROLE_FIREBASE_VALUES[targetRole] || targetRole;
+    if (role === 'owner') return true;
+    if (role === 'it_admin') return target !== 'owner';
+    if (role === 'gm') return !['owner', 'it_admin', 'gm'].includes(target);
+    return ['branch_manager', 'branch_manager_accountant'].includes(role) && target === 'employee';
+}
+
 function sameBranch(first, second) {
     const normalize = value => {
         const raw = String(value || '').trim().toLocaleLowerCase('ar').replace(/\s+/g, '');
@@ -348,7 +362,8 @@ function sameBranch(first, second) {
     return normalize(first) !== '' && normalize(first) === normalize(second);
 }
 
-function mayManageUser(target, creating = false) {
+function mayManageUser(target) {
+    if (!target || !canManageTargetRole(target.role)) return false;
     if (canManageAllUsers()) return true;
     if (!isBranchUserManager()) return false;
     return ROLE_FIREBASE_VALUES[target?.role] === 'employee' &&
@@ -475,7 +490,8 @@ function applyLanguage() {
     const t = translations[currentLang];
     document.getElementById('htmlRoot').setAttribute('dir', t.htmlDir);
     document.getElementById('htmlRoot').setAttribute('lang', t.htmlLang);
-    document.getElementById('pageTitle').innerText = t.pageTitle;
+    const pageTitle = document.getElementById('pageTitle');
+    if (pageTitle) pageTitle.innerText = t.pageTitle;
 
     for (let key in t) {
         const el = document.getElementById(key);
@@ -489,8 +505,11 @@ function applyLanguage() {
             }
         }
     }
-    document.getElementById('langToggleBtn').innerHTML = currentLang === 'ar' ? '<i class="fa-solid fa-globe"></i> English' : '<i class="fa-solid fa-globe"></i> العربية';
-    refreshUI();
+    const langToggleButton = document.getElementById('langToggleBtn');
+    if (langToggleButton) {
+        langToggleButton.innerHTML = currentLang === 'ar' ? '<i class="fa-solid fa-globe"></i> English' : '<i class="fa-solid fa-globe"></i> العربية';
+    }
+    if (document.body?.dataset.module !== 'login') refreshUI();
 }
 
 async function activateAuthenticatedUser(profileUid) {
@@ -498,6 +517,10 @@ async function activateAuthenticatedUser(profileUid) {
     if (authActivationPromise) return authActivationPromise;
     if (!auth?.currentUser || auth.currentUser.uid !== profileUid) {
         throw new Error('جلسة المصادقة غير صالحة.');
+    }
+    const authEmail = String(auth.currentUser.email || '').trim().toLowerCase();
+    if (profileUid !== OWNER_EMAIL_DOMAIN_EXCEPTION_UID && !authEmail.endsWith('@swd.ae')) {
+        throw new Error('استخدم بريد الشركة المنتهي بـ @swd.ae.');
     }
 
     authActivationPromise = (async () => {
@@ -532,7 +555,7 @@ async function activateAuthenticatedUser(profileUid) {
 
 async function handleLogin(e) {
     e.preventDefault();
-    if (!useFirebase || !rtdb || !auth || !functionsClient) {
+    if (!useFirebase || !rtdb || !auth) {
         showCloudError('تعذر تهيئة خدمات المصادقة وقاعدة البيانات.');
         return;
     }
@@ -543,15 +566,14 @@ async function handleLogin(e) {
         loginButton.disabled = true;
         loginButton.textContent = 'جاري تسجيل الدخول...';
     }
-    const username = String(loginUserInput?.value || '').trim();
+    const email = String(loginUserInput?.value || '').trim().toLowerCase();
     const password = loginPassInput?.value || '';
     try {
-        if (!username || !password) throw new Error('أدخل اسم المستخدم وكلمة المرور.');
-        const login = httpsCallable(functionsClient, 'loginWithUsername');
-        const result = await login({ username, password });
-        await signInWithCustomToken(auth, result.data.token);
+        if (!email || !password) throw new Error('أدخل البريد الإلكتروني وكلمة المرور.');
+        await signInWithEmailAndPassword(auth, email, password);
         await activateAuthenticatedUser(auth.currentUser.uid);
         if (loginPassInput) loginPassInput.value = '';
+        window.location.replace('dashboard.html');
     } catch (error) {
         showCloudError(error.message || 'اسم المستخدم أو كلمة المرور غير صحيحة.');
     } finally {
@@ -658,7 +680,8 @@ async function handleUserChangePassword(e) {
     }
 
     try {
-        await httpsCallable(functionsClient, 'changeOwnPassword')({ password: newPass });
+        if (!auth?.currentUser) throw new Error('سجّل الدخول أولاً.');
+        await updatePassword(auth.currentUser, newPass);
         document.getElementById('newPassInput').value = '';
         alert('تم تغيير كلمة المرور بنجاح.');
         closeModal('changePassModal');
@@ -666,7 +689,9 @@ async function handleUserChangePassword(e) {
         window.location.replace('login.html');
     } catch (error) {
         console.error('Password update failed:', error);
-        alert('تعذر تغيير كلمة المرور.');
+        alert(error.code === 'auth/requires-recent-login'
+            ? 'انتهت صلاحية الجلسة. سجّل الدخول مجدداً ثم حاول تغيير كلمة المرور.'
+            : error.message || 'تعذر تغيير كلمة المرور.');
     }
 }
 
@@ -804,6 +829,29 @@ function normalizeArray(val) {
     return [];
 }
 
+function serializeFirebaseCollection(collection, records) {
+    if (collection !== 'passengers') return sanitizeForFirebase(records);
+    const idCounts = new Map();
+    for (const record of records) {
+        const ticketId = String(record?.id ?? '').trim();
+        if (/^[A-Za-z0-9_-]{1,64}$/.test(ticketId)) {
+            idCounts.set(ticketId, (idCounts.get(ticketId) || 0) + 1);
+        }
+    }
+    const indexedRecords = {};
+    records.forEach((record, index) => {
+        const ticketId = String(record?.id ?? '').trim();
+        if (/^[A-Za-z0-9_-]{1,64}$/.test(ticketId) && idCounts.get(ticketId) === 1) {
+            indexedRecords[ticketId] = { ...record, id: ticketId };
+            return;
+        }
+        let legacyKey = `legacy_${index}`;
+        while (Object.prototype.hasOwnProperty.call(indexedRecords, legacyKey)) legacyKey += '_';
+        indexedRecords[legacyKey] = record;
+    });
+    return sanitizeForFirebase(indexedRecords);
+}
+
 function getRecordBranch(collection, record) {
     const direct = getProfileBranchId(record);
     if (DATA_BRANCHES.includes(direct) && direct !== 'unassigned') return direct;
@@ -880,11 +928,30 @@ function pushLocalToFirebase() {
         branch,
         Object.fromEntries(DATA_COLLECTIONS.map(collection => [collection, []]))
     ]));
-    for (const collection of DATA_COLLECTIONS) {
-        for (const record of normalizeArray(db[collection])) {
-            const branch = getRecordBranch(collection, record);
-            if (partitions[branch]) partitions[branch][collection].push(record);
+    try {
+        for (const collection of DATA_COLLECTIONS) {
+            for (const record of normalizeArray(db[collection])) {
+                const branch = getRecordBranch(collection, record);
+                if (partitions[branch]) partitions[branch][collection].push(record);
+            }
         }
+    } catch (error) {
+        hasPendingOfflineWrites = true;
+        reportFirebaseSyncError('تعذر تجهيز بيانات النظام للمزامنة.', error);
+        return Promise.resolve(false);
+    }
+    const firebasePartitions = {};
+    try {
+        for (const branch of accessibleBranches) {
+            firebasePartitions[branch] = {};
+            for (const collection of DATA_COLLECTIONS) {
+                firebasePartitions[branch][collection] = serializeFirebaseCollection(collection, partitions[branch][collection]);
+            }
+        }
+    } catch (error) {
+        hasPendingOfflineWrites = true;
+        reportFirebaseSyncError('تعذر تجهيز بيانات النظام للمزامنة.', error);
+        return Promise.resolve(false);
     }
     const writes = [];
     for (const branch of accessibleBranches) {
@@ -892,7 +959,7 @@ function pushLocalToFirebase() {
             if (!canWriteDataCollection(collection)) continue;
             writes.push(set(
                 ref(rtdb, `systemUnifiedData/${branch}/${collection}`),
-                sanitizeForFirebase(partitions[branch][collection])
+                firebasePartitions[branch][collection]
             ));
         }
         const userBranch = getProfileBranchId();
@@ -4643,126 +4710,106 @@ function renderDepartedTripsFinanceTable() {
 async function handleSaveUser(e) {
     e.preventDefault();
     if (!requireModuleAccess('users', 'إدارة الحسابات')) return;
-    const origName = document.getElementById('userEditOriginalName').value;
+    const origUid = document.getElementById('userEditOriginalUid').value;
+    const uid = document.getElementById('manageUid').value.trim();
     const username = document.getElementById('manageUsername').value.trim();
-    const password = document.getElementById('managePassword')?.value.trim() || '';
-    const creating = !origName;
+    const email = document.getElementById('manageEmail').value.trim().toLowerCase();
+    const creating = !origUid;
     const requestedRole = document.getElementById('manageRole').value;
     const requestedBranch = document.getElementById('manageBranch').value;
     const role = isBranchUserManager() ? 'موظف' : requestedRole;
     const branch = isBranchUserManager() ? currentUser.branch : requestedBranch;
+    const actorRole = getCurrentRoleCode();
 
-    if (creating && !mayManageUser({ role, branch }, true)) {
-        alert('إضافة المستخدمين متاحة لمسؤول التقنية والمدير العام، ويمكن لمدير الفرع إضافة موظفي فرعه فقط.');
+    if (!uid || uid.includes('/') || /[.#$\[\]]/.test(uid)) {
+        alert('أدخل Firebase UID صحيحاً من حساب المستخدم في Firebase Authentication.');
         return;
     }
-
-    if (creating) {
-        if (!username || !password) {
-            alert('أدخل اسم المستخدم وكلمة المرور لإنشاء الحساب.');
-            return;
-        }
-        if (password.length < 12) {
-            alert('كلمة المرور يجب ألا تقل عن 12 حرفاً.');
-            return;
-        }
-        if (role === 'مالك' && currentUser.role !== 'مالك') {
-            alert('لا يمكن منح صلاحية المالك إلا لحساب مالك موجود.');
-            return;
-        }
-        if (cloudUsers.some(user => String(user.username).trim().toLocaleLowerCase('ar') === username.toLocaleLowerCase('ar'))) {
-            alert('اسم المستخدم موجود بالفعل.');
-            return;
-        }
-        const profile = serializeUserProfile({
-            username,
-            fullName: username,
-            role,
-            branch,
-            phone: document.getElementById('managePhone')?.value.trim() || '',
-            active: true,
-            hidden: false
-        });
-        try {
-            await httpsCallable(functionsClient, 'createManagedUser')({
-                ...profile,
-                password
-            });
-            resetUserForm();
-            alert('تم إنشاء الحساب بنجاح.');
-        } catch (error) {
-            console.error('User creation failed:', error);
-            alert(error.message || 'تعذر إنشاء الحساب.');
-        }
+    if (!username || !email) {
+        alert('أدخل البريد الإلكتروني واسم العرض.');
         return;
     }
-    const previous = cloudUsers.find(user => user.username === origName);
-    if (!previous) {
-        alert('المستخدم غير موجود أو لم يتم تحميل قائمته من Firebase.');
+    if (!/^[^@\s]+@swd\.ae$/i.test(email)) {
+        alert('يجب أن ينتهي بريد المستخدم بـ @swd.ae.');
         return;
     }
-    if (cloudUsers.some(user => user.uid !== previous.uid && user.username === username)) {
-        alert('اسم المستخدم موجود بالفعل.');
+    if (creating && !mayManageUser({ role, branch })) {
+        alert('إضافة المستخدمين متاحة للإدارة، ويمكن لمدير الفرع إضافة موظفي فرعه فقط.');
+        return;
+    }
+    if (creating && cloudUsers.some(user => user.uid === uid)) {
+        alert('يوجد ملف صلاحيات بهذا UID بالفعل. استخدم تعديل الملف بدلاً من ربطه مرة أخرى.');
         return;
     }
 
-    if (!mayManageUser(previous)) {
+    const previous = creating ? null : cloudUsers.find(user => user.uid === origUid);
+    if (!creating && (!previous || uid !== origUid)) {
+        alert('لا يمكن تغيير UID ملف المستخدم.');
+        return;
+    }
+    if (previous?.uid === currentUser.uid) {
+        alert('لا يمكن تعديل ملف صلاحيات حسابك من داخل التطبيق.');
+        return;
+    }
+    if (previous && !mayManageUser(previous)) {
+        alert('لا تملك صلاحية إدارة ملف هذا المستخدم.');
+        return;
+    }
+    if (isBranchUserManager() && (role !== 'موظف' || !sameBranch(branch, currentUser.branch))) {
         alert('يمكن لمدير الفرع إدارة موظفي فرعه فقط.');
         return;
     }
-    if (!canManageAllUsers() && (role !== previous.role || !sameBranch(branch, previous.branch))) {
+    if (actorRole === 'it_admin' && (role === 'مالك' || previous?.role === 'مالك')) {
+        alert('لا يمكن لمسؤول التقنية منح صلاحية المالك أو تعديل ملفه.');
+        return;
+    }
+    if (actorRole === 'gm' && ['owner', 'it_admin', 'gm'].includes(ROLE_FIREBASE_VALUES[role] || role)) {
+        alert('لا يمكن للمدير العام منح أو تعديل صلاحيات الإدارة العليا.');
+        return;
+    }
+    if (actorRole === 'gm' && previous && ['مالك', 'مسؤول التقنية', 'مدير عام'].includes(previous.role)) {
+        alert('لا يمكن للمدير العام تعديل ملفات الإدارة العليا.');
+        return;
+    }
+    if (previous && !canManageAllUsers() && (role !== previous.role || !sameBranch(branch, previous.branch))) {
         alert('لا يمكن تغيير دور الموظف أو نقله إلى فرع آخر.');
         return;
     }
-    if (role === 'مالك' && getCurrentRoleCode() !== 'owner') {
-        alert('لا يمكن منح صلاحية المالك إلا لحساب المالك.');
-        return;
-    }
-    const updatedProfile = serializeUserProfile({
-        ...previous,
+    const profile = serializeUserProfile({
+        ...(previous || {}),
+        email,
         username,
-        fullName: previous.fullName || username,
+        fullName: previous?.fullName || username,
         role,
         branch,
-        phone: document.getElementById('managePhone')?.value.trim() || previous.phone || '',
-        active: previous.active,
-        hidden: previous.hidden
+        phone: document.getElementById('managePhone')?.value.trim() || previous?.phone || '',
+        active: previous?.active !== false,
+        hidden: previous?.hidden === true
     });
-    if (password) {
-        if (password.length < 12) {
-            alert('كلمة المرور يجب ألا تقل عن 12 حرفاً.');
-            return;
-        }
-    }
-
     try {
-        await httpsCallable(functionsClient, 'updateManagedUser')({
-            uid: previous.uid,
-            ...updatedProfile,
-            password
-        });
+        await set(ref(rtdb, `users/${uid}`), profile);
         resetUserForm();
-        renderUsersTable();
-        alert('تم تحديث ملف المستخدم.');
+        alert(creating ? 'تم ربط ملف الصلاحيات بحساب Firebase Authentication.' : 'تم تحديث ملف الصلاحيات.');
     } catch (error) {
         console.error('User profile update failed:', error);
         alert(error.message || 'تعذر تحديث ملف المستخدم.');
     }
 }
 
-function editUser(username) {
+function editUser(uid) {
     if (!requireModuleAccess('users', 'إدارة الحسابات')) return;
-    let users = [...cloudUsers];
-    const u = users.find(x => x.username === username);
+    const u = cloudUsers.find(user => user.uid === uid);
     if (!u) return;
+    if (u.uid === currentUser.uid) { alert('لا يمكن تعديل ملف صلاحيات حسابك من داخل التطبيق.'); return; }
     if (!mayManageUser(u)) { alert('يمكن لمدير الفرع إدارة موظفي فرعه فقط.'); return; }
-    document.getElementById('userEditOriginalName').value = u.username;
+    document.getElementById('userEditOriginalUid').value = u.uid;
+    document.getElementById('manageUid').value = u.uid;
+    document.getElementById('manageUid').disabled = true;
+    document.getElementById('manageEmail').value = u.email || '';
     document.getElementById('manageUsername').value = u.username;
     document.getElementById('manageRole').value = u.role || 'موظف';
     document.getElementById('manageBranch').value = u.branch || 'فرع عجمان';
     document.getElementById('managePhone').value = u.phone || '';
-    const pass = document.getElementById('managePassword');
-    if (pass) { pass.required = false; pass.value = ''; pass.placeholder = 'اتركها فارغة للإبقاء عليها'; }
     if (isBranchUserManager()) {
         document.getElementById('manageRole').disabled = true;
         document.getElementById('manageBranch').disabled = true;
@@ -4770,11 +4817,10 @@ function editUser(username) {
     document.getElementById('userSubmitBtn').innerText = 'حفظ التعديلات';
 }
 
-async function deleteUser(username) {
+async function deleteUser(uid) {
     if (!requireModuleAccess('users', 'إدارة الحسابات')) return;
-    if (!canManageAllUsers()) { alert('حذف الحسابات متاح لمسؤول التقنية والمدير العام فقط.'); return; }
-    if (username === currentUser.username) { alert('لا يمكنك حذف حسابك النشط حالياً!'); return; }
-    const target = cloudUsers.find(u => u.username === username);
+    if (!canManageAllUsers()) { alert('حذف ملفات الصلاحيات متاح للإدارة فقط.'); return; }
+    const target = cloudUsers.find(user => user.uid === uid);
     if (!target) return;
     if (!mayManageUser(target)) { alert('يمكن لمدير الفرع إدارة موظفي فرعه فقط.'); return; }
     if (target.uid === currentUser.uid) { alert('لا يمكنك حذف ملف حسابك النشط.'); return; }
@@ -4782,23 +4828,23 @@ async function deleteUser(username) {
         alert('لا يمكن حذف ملف المالك.');
         return;
     }
+    if (!window.confirm(`سيؤدي حذف ملف الصلاحيات إلى منع الحساب من الوصول إلى بيانات النظام، ولن يحذف حساب Firebase Authentication. متابعة؟`)) return;
     try {
-        await httpsCallable(functionsClient, 'deleteManagedUser')({ uid: target.uid });
+        await remove(ref(rtdb, `users/${target.uid}`));
     } catch (error) {
         console.error('User profile removal failed:', error);
         alert(error.message || 'تعذر حذف ملف المستخدم.');
     }
-    renderUsersTable();
 }
 
-async function toggleUserActive(username) {
+async function toggleUserActive(uid) {
     if (!requireModuleAccess('users', 'إدارة الحسابات')) return;
-    if (!canManageAllUsers()) { alert('تغيير حالة الحساب متاح لمسؤول التقنية والمدير العام فقط.'); return; }
-    if (username === currentUser.username || cloudUsers.find(user => user.username === username)?.uid === currentUser.uid) {
+    if (!canManageAllUsers()) { alert('تغيير حالة ملف الصلاحيات متاح للإدارة فقط.'); return; }
+    if (uid === currentUser.uid) {
         alert('لا يمكنك إيقاف حسابك النشط حالياً!');
         return;
     }
-    const target = cloudUsers.find(u => u.username === username);
+    const target = cloudUsers.find(user => user.uid === uid);
     if (!target) return;
     if (!mayManageUser(target)) { alert('يمكن لمدير الفرع إدارة موظفي فرعه فقط.'); return; }
     if (target.role === 'مالك' && currentUser.role !== 'مالك') {
@@ -4806,12 +4852,11 @@ async function toggleUserActive(username) {
         return;
     }
     const active = target.active === false;
+    if (!window.confirm(active
+        ? 'سيُعاد السماح لهذا الحساب بالوصول إلى بيانات النظام. متابعة؟'
+        : 'سيُمنع هذا الحساب من الوصول إلى بيانات النظام، لكن حساب Firebase Authentication سيبقى. متابعة؟')) return;
     try {
-        await httpsCallable(functionsClient, 'updateManagedUser')({
-            uid: target.uid,
-            ...serializeUserProfile({ ...target, active }),
-            password: ''
-        });
+        await set(ref(rtdb, `users/${target.uid}`), serializeUserProfile({ ...target, active }));
     } catch (error) {
         console.error('User status update failed:', error);
         alert(error.message || 'تعذر تغيير حالة المستخدم.');
@@ -4820,12 +4865,11 @@ async function toggleUserActive(username) {
 
 function resetUserForm() {
     document.getElementById('userForm').reset();
-    document.getElementById('userEditOriginalName').value = '';
-    const pass = document.getElementById('managePassword');
-    if (pass) { pass.required = true; pass.placeholder = 'كلمة المرور'; }
+    document.getElementById('userEditOriginalUid').value = '';
+    document.getElementById('manageUid').disabled = false;
     document.getElementById('manageRole').disabled = false;
     document.getElementById('manageBranch').disabled = false;
-    document.getElementById('userSubmitBtn').innerText = 'حفظ ملف المستخدم';
+    document.getElementById('userSubmitBtn').innerText = 'ربط ملف الصلاحيات';
     configureUserManagementForm();
 }
 
@@ -4859,21 +4903,23 @@ function renderUsersTable() {
     users.forEach(u => {
         if (u.role === 'مالك' && u.hidden && currentUser.role !== 'مالك') return;
         const protectedOwner = u.role === 'مالك';
-        const canEditTarget = mayManageUser(u) && (!protectedOwner || getCurrentRoleCode() === 'owner');
+        const canEditTarget = u.uid !== currentUser.uid && mayManageUser(u) && (!protectedOwner || getCurrentRoleCode() === 'owner');
         const username = escapeUserTableValue(u.username);
+        const email = escapeUserTableValue(u.email);
         const role = escapeUserTableValue(u.role);
         const branch = escapeUserTableValue(u.branch || 'فرع عجمان');
-        const usernameArg = JSON.stringify(u.username).replace(/</g, '\\u003c');
+        const uidArg = JSON.stringify(u.uid).replace(/</g, '\\u003c');
         tbody.insertRow().innerHTML = `
-                    <td><strong>${username}</strong></td>
+                    <td><strong>${username}</strong><div class="text-[10px] text-zinc-500">${email}</div></td>
                     <td><span class="bg-amber-950 text-gold px-2 py-0.5 rounded text-xs font-bold">${role}</span></td>
                     <td><span class="bg-indigo-950 text-indigo-300 px-2 py-0.5 rounded text-xs font-bold">${branch}</span></td>
+                    <td>${escapeUserTableValue(u.phone || '-')}</td>
                     <td><span class="${u.active === false ? 'text-red-400' : 'text-emerald-400'} font-bold">${u.active === false ? 'موقوف' : 'نشط'}</span></td>
                     <td class="space-x-1 space-x-reverse">
                         ${canEditTarget ? `
-                        <button onclick="editUser(${usernameArg})" class="bg-amber-600 text-black px-2 py-1 rounded text-xs font-bold"><i class="fa-solid fa-pen"></i> تعديل</button>
-                        ${canManageAllUsers() ? `<button onclick="toggleUserActive(${usernameArg})" class="bg-zinc-700 text-zinc-100 px-2 py-1 rounded text-xs font-bold">${u.active === false ? 'تفعيل' : 'إيقاف'}</button>
-                        <button onclick="deleteUser(${usernameArg})" class="bg-red-900 text-white px-2 py-1 rounded text-xs"><i class="fa-solid fa-trash"></i> حذف الملف</button>` : ''}` : '<span class="text-zinc-500 text-xs">محمي</span>'}
+                        <button onclick="editUser(${uidArg})" class="bg-amber-600 text-black px-2 py-1 rounded text-xs font-bold"><i class="fa-solid fa-pen"></i> تعديل</button>
+                        ${canManageAllUsers() ? `<button onclick="toggleUserActive(${uidArg})" class="bg-zinc-700 text-zinc-100 px-2 py-1 rounded text-xs font-bold">${u.active === false ? 'تفعيل' : 'إيقاف'}</button>
+                        <button onclick="deleteUser(${uidArg})" class="bg-red-900 text-white px-2 py-1 rounded text-xs"><i class="fa-solid fa-trash"></i> حذف الملف</button>` : ''}` : '<span class="text-zinc-500 text-xs">محمي</span>'}
                     </td>
                 `;
     });

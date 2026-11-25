@@ -4,7 +4,7 @@ const { createHash, randomBytes, scryptSync } = require('node:crypto');
 const { applicationDefault, initializeApp } = require('firebase-admin/app');
 const { getDatabase } = require('firebase-admin/database');
 
-const databaseURL = 'https://wadi-bana-b585b-default-rtdb.firebaseio.com';
+const databaseURL = 'https://project-f5a8d8d3-2c42-41cc-b93-default-rtdb.firebaseio.com';
 initializeApp({ credential: applicationDefault(), databaseURL });
 
 const database = getDatabase();
