@@ -354,3 +354,5 @@ Generated sources: index.d.ts [8408B] esm\index.esm.js [5353B] esm\package.json 
 [debug] [2026-11-25T03:29:12.218Z] I1125 07:29:12.217440   26868 dev.go:103] Listening on address (HTTP + gRPC): 127.0.0.1:50001
  {"metadata":{"emulator":{"name":"dataconnect"},"message":"I1125 07:29:12.217440   26868 dev.go:103] Listening on address (HTTP + gRPC): 127.0.0.1:50001\n"}}
 [error] [Firebase Plugin] error:  {}
+[info] [Firebase Plugin] Stopping SQL Connect toolkit
+[warn] !  SQL Connect Emulator has exited upon receiving signal: SIGINT 
