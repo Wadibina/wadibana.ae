@@ -53,30 +53,22 @@
         <i class="fa-solid fa-key fa-2x text-gold"></i>
       </div>
       <h4 class="fw-black text-gold mb-1">استعادة كلمة المرور</h4>
-      <p class="text-secondary small mb-0">أدخل اسم المستخدم ورقم واتساب المسجل في ملفك. ستراجع الإدارة الطلب وتتواصل معك على الرقم المسجل.</p>
+      <p class="text-secondary small mb-0">أدخل البريد الإلكتروني المرتبط بحسابك لإرسال رابط آمن لإعادة تعيين كلمة المرور.</p>
     </div>
 
     <div id="forgetAlert" class="alert d-none py-2 small fw-bold text-center" role="alert"></div>
 
     <form id="forgetPasswordForm" onsubmit="handleForgetSubmit(event)">
       <div class="mb-3">
-        <label for="forgetUsername" class="form-label small fw-bold">اسم المستخدم المسجل</label>
+        <label for="forgetEmail" class="form-label small fw-bold">البريد الإلكتروني المسجل</label>
         <div class="input-group">
-          <span class="input-group-text bg-dark border-secondary text-gold"><i class="fa-solid fa-user-check"></i></span>
-          <input type="text" id="forgetUsername" class="form-control bg-dark text-light border-secondary" placeholder="مثال: محمود أو اسم الموظف" required />
-        </div>
-      </div>
-
-      <div class="mb-3">
-        <label for="forgetPhone" class="form-label small fw-bold">رقم الهاتف / واتساب للتواصل</label>
-        <div class="input-group">
-          <span class="input-group-text bg-dark border-secondary text-gold"><i class="fa-brands fa-whatsapp"></i></span>
-          <input type="tel" id="forgetPhone" class="form-control bg-dark text-light border-secondary" placeholder="05XXXXXXXX" required />
+          <span class="input-group-text bg-dark border-secondary text-gold"><i class="fa-solid fa-envelope"></i></span>
+          <input type="email" id="forgetEmail" class="form-control bg-dark text-light border-secondary" autocomplete="email" placeholder="name@example.com" required />
         </div>
       </div>
 
       <button type="submit" id="btnForgetSubmit" class="btn btn-gold w-100 py-2 mb-3">
-        <i class="fa-solid fa-paper-plane ms-1"></i> إرسال طلب استعادة كلمة المرور
+        <i class="fa-solid fa-paper-plane ms-1"></i> إرسال رابط الاستعادة
       </button>
 
       <div class="d-grid gap-2">
@@ -92,33 +84,34 @@
   </div>
 
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
-    import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-functions.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-app.js";
+    import { getAuth, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-auth.js";
     import { firebaseConfig } from "./assets/js/firebase-config.js";
 
-    const functions = getFunctions(initializeApp(firebaseConfig));
+    const auth = getAuth(initializeApp(firebaseConfig));
 
     window.handleForgetSubmit = async function (e) {
       e.preventDefault();
-      const username = document.getElementById('forgetUsername').value.trim();
-      const phone = document.getElementById('forgetPhone').value.trim();
+      const email = document.getElementById('forgetEmail').value.trim().toLowerCase();
       const alertBox = document.getElementById('forgetAlert');
       const btn = document.getElementById('btnForgetSubmit');
 
       btn.disabled = true;
-      btn.innerHTML = '<span class="spinner-border spinner-border-sm ms-1"></span> جاري إرسال الطلب...';
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm ms-1"></span> جارٍ إرسال الرابط...';
 
       try {
-        await httpsCallable(functions, 'requestPasswordReset')({ username, phone });
-
+        await sendPasswordResetEmail(auth, email);
         alertBox.className = 'alert alert-success py-2 small fw-bold text-center';
-        alertBox.textContent = 'إذا تطابقت البيانات، سيصل طلب الاستعادة إلى الإدارة لمراجعته.';
+        alertBox.textContent = 'إذا كان البريد مرتبطاً بحساب، فسيصلك رابط إعادة تعيين كلمة المرور.';
       } catch (err) {
+        console.error('Password reset email failed:', err);
         alertBox.className = 'alert alert-warning py-2 small fw-bold text-center';
-        alertBox.textContent = 'تعذر إرسال الطلب حالياً. يرجى المحاولة لاحقاً أو التواصل مع الإدارة.';
+        alertBox.textContent = err.code === 'auth/user-not-found'
+          ? 'إذا كان البريد مرتبطاً بحساب، فسيصلك رابط إعادة تعيين كلمة المرور.'
+          : 'تعذر إرسال رابط الاستعادة. تحقق من تفعيل Email/Password وإعداد النطاق في Firebase Console ثم حاول مجدداً.';
       } finally {
         btn.disabled = false;
-        btn.innerHTML = '<i class="fa-solid fa-paper-plane ms-1"></i> إرسال طلب استعادة كلمة المرور';
+        btn.innerHTML = '<i class="fa-solid fa-paper-plane ms-1"></i> إرسال رابط الاستعادة';
       }
     };
   </script>

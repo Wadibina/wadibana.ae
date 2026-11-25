@@ -15,6 +15,7 @@ client_secret_*.json
 !.env.example
 WadiBina_Backup_*.json
 wadi-bana-b585b-default-rtdb-export*.json
+project-f5a8d8d3-2c42-41cc-b93-default-rtdb-export*.json
 security-user-map.json
 gemini-code-*
 node_modules/
