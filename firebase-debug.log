@@ -1,0 +1,17 @@
+[debug] [2026-11-25T04:19:53.738Z] ----------------------------------------------------------------------
+[debug] [2026-11-25T04:19:53.746Z] Command:       C:\Program Files\nodejs\node.exe C:\Users\user\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js deploy --only database
+[debug] [2026-11-25T04:19:53.747Z] CLI Version:   15.37.0
+[debug] [2026-11-25T04:19:53.747Z] Platform:      win32
+[debug] [2026-11-25T04:19:53.747Z] Node Version:  v26.13.1
+[debug] [2026-11-25T04:19:53.747Z] Detected Agent: github_copilot_vscode_agent
+[debug] [2026-11-25T04:19:53.747Z] Time:          Wed Nov 25 2026 08:19:53 GMT+0400 (توقيت الخليج)
+[debug] [2026-11-25T04:19:53.748Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-11-25T04:19:56.811Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-11-25T04:19:56.812Z] > authorizing via signed-in user (speciallinestore@gmail.com)
+[debug] [2026-11-25T04:19:56.812Z] [iam] checking project project-f5a8d8d3-2c42-41cc-b93 for permissions ["firebase.projects.get","firebasedatabase.instances.update"]
+[debug] [2026-11-25T04:19:56.834Z] Checked if tokens are valid: true, expires at: 1795583363161
+[debug] [2026-11-25T04:19:56.835Z] Checked if tokens are valid: true, expires at: 1795583363161
+[debug] [2026-11-25T04:19:56.835Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/project-f5a8d8d3-2c42-41cc-b93:testIamPermissions [none]
+[debug] [2026-11-25T04:19:56.835Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/project-f5a8d8d3-2c42-41cc-b93:testIamPermissions  x-goog-user-project=project-f5a8d8d3-2c42-41cc-b93
+[debug] [2026-11-25T04:19:56.835Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/project-f5a8d8d3-2c42-41cc-b93:testIamPermissions {"permissions":["firebase.projects.get","firebasedatabase.instances.update"]}
