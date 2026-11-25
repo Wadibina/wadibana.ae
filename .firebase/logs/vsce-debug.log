@@ -393,3 +393,39 @@ I1125 08:29:46.246926   30348 dev.go:103] Listening on address (HTTP + gRPC): 12
 [debug] [2026-11-25T04:29:48.536Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects 200
 [debug] [2026-11-25T04:29:48.536Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects [omitted]
 [error] [Firebase Plugin] error:  {}
+[debug] [2026-11-25T05:04:26.150Z] [Firebase Plugin] Value of process.env.MONOSPACE_ENV: undefined
+[debug] [2026-11-25T05:04:26.151Z] [Firebase Plugin] requireAuthWrapper
+[debug] [2026-11-25T05:04:26.165Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-11-25T05:04:26.166Z] > authorizing via signed-in user (speciallinestore@gmail.com)
+[debug] [2026-11-25T05:04:26.167Z] Checked if tokens are valid: false, expires at: 1795583363161
+[debug] [2026-11-25T05:04:26.167Z] Checked if tokens are valid: false, expires at: 1795583363161
+[debug] [2026-11-25T05:04:26.167Z] > refreshing access token with scopes: []
+[debug] [2026-11-25T05:04:26.170Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-11-25T05:04:26.170Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-11-25T05:04:26.180Z] [Firebase Plugin] Value of process.env.MONOSPACE_ENV: undefined
+[debug] [2026-11-25T05:04:26.181Z] [Firebase Plugin] requireAuthWrapper
+[debug] [2026-11-25T05:04:26.181Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-11-25T05:04:26.182Z] > authorizing via signed-in user (speciallinestore@gmail.com)
+[debug] [2026-11-25T05:04:26.182Z] Checked if tokens are valid: false, expires at: 1795583363161
+[debug] [2026-11-25T05:04:26.183Z] Checked if tokens are valid: false, expires at: 1795583363161
+[debug] [2026-11-25T05:04:26.183Z] > refreshing access token with scopes: []
+[debug] [2026-11-25T05:04:26.184Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-11-25T05:04:26.184Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-11-25T05:04:26.707Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2026-11-25T05:04:26.708Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-11-25T05:04:26.736Z] [Firebase Plugin] User found:  speciallinestore@gmail.com
+[info] [Firebase Plugin] (Core:Project) New user detected, fetching projects
+[debug] [2026-11-25T05:04:26.738Z] Checked if tokens are valid: true, expires at: 1795586665708
+[debug] [2026-11-25T05:04:26.739Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects pageSize=1000
+[debug] [2026-11-25T05:04:26.809Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2026-11-25T05:04:26.810Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-11-25T05:04:26.830Z] [Firebase Plugin] User found:  speciallinestore@gmail.com
+[info] [Firebase Plugin] (Core:Project) New user detected, fetching projects
+[debug] [2026-11-25T05:04:26.832Z] Checked if tokens are valid: true, expires at: 1795586665810
+[debug] [2026-11-25T05:04:26.833Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects pageSize=1000
+[debug] [2026-11-25T05:04:27.557Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects 200
+[debug] [2026-11-25T05:04:27.558Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects [omitted]
+[debug] [2026-11-25T05:04:27.845Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects 200
+[debug] [2026-11-25T05:04:27.846Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects [omitted]
+[info] [Firebase Plugin] Stopping SQL Connect toolkit
+[warn] !  SQL Connect Emulator has exited upon receiving signal: SIGINT 
