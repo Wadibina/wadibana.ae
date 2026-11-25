@@ -2,24 +2,31 @@
                     <div class="bg-cardbg border border-bordergold p-5 rounded-2xl shadow-xl space-y-4">
                         <h3
                             class="text-gold font-bold text-sm border-b border-zinc-800 pb-3 flex items-center justify-between">
-                            <span><i class="fa-solid fa-users-gear ml-1"></i> إدارة المستخدمين والموظفين</span>
+                            <span><i class="fa-solid fa-users-gear ml-1"></i> ملفات الصلاحيات</span>
                         </h3>
 
                         <form id="userForm" onsubmit="handleSaveUser(event)"
                             class="bg-darkbg p-4 rounded-xl border border-zinc-800 space-y-3">
-                            <input type="hidden" id="userEditOriginalName" value="">
-                            <div class="grid grid-cols-1 sm:grid-cols-5 gap-3">
+                            <input type="hidden" id="userEditOriginalUid" value="">
+                            <p class="text-xs text-zinc-400 leading-6">أنشئ حساب البريد وكلمة المرور أولاً من Firebase Console &gt; Authentication، ثم أدخل UID هنا لربط الدور والفرع. لا تُدخل كلمة المرور في هذا النظام.</p>
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <div>
+                                    <label class="block text-xs text-zinc-400 mb-1 font-bold">Firebase UID</label>
+                                    <input type="text" id="manageUid" required autocomplete="off"
+                                        class="w-full bg-zinc-900 border border-zinc-700 rounded p-2 text-xs text-zinc-100"
+                                        placeholder="UID من Firebase Authentication">
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-zinc-400 mb-1 font-bold">البريد الإلكتروني</label>
+                                    <input type="email" id="manageEmail" required autocomplete="email"
+                                        class="w-full bg-zinc-900 border border-zinc-700 rounded p-2 text-xs text-zinc-100"
+                                        placeholder="name@swd.ae">
+                                </div>
                                 <div>
                                     <label class="block text-xs text-zinc-400 mb-1 font-bold">اسم المستخدم</label>
                                     <input type="text" id="manageUsername" required
                                         class="w-full bg-zinc-900 border border-zinc-700 rounded p-2 text-xs text-zinc-100"
                                         placeholder="اسم المستخدم">
-                                </div>
-                                <div>
-                                    <label class="block text-xs text-zinc-400 mb-1 font-bold">كلمة المرور</label>
-                                    <input type="password" id="managePassword" required minlength="12" autocomplete="new-password"
-                                        class="w-full bg-zinc-900 border border-gold rounded p-2 text-xs text-gold font-bold"
-                                        placeholder="كلمة المرور">
                                 </div>
                                 <div>
                                     <label class="block text-xs text-zinc-400 mb-1 font-bold">رقم الهاتف / واتساب</label>
@@ -38,7 +45,7 @@
                                         <option value="مدير فرع ومحاسب">مدير فرع ومحاسب</option>
                                         <option value="مدير فرع">مدير فرع</option>
                                         <option value="محاسب فرع">محاسب فرع</option>
-                                        <option value="موظف">موظف</option>
+                                        <option value="موظف" selected>موظف</option>
                                     </select>
                                 </div>
                                 <div>
@@ -54,11 +61,10 @@
                                     </select>
                                 </div>
                             </div>
-                            <p class="text-xs text-zinc-400 leading-6">مسؤول التقنية والمدير العام يديران جميع الحسابات. مدير الفرع يضيف ويعدّل موظفي فرعه فقط؛ ولا يمكنه تغيير أدوارهم أو حذف الحسابات.</p>
+                            <p class="text-xs text-zinc-400 leading-6">تُدار كلمات المرور والحسابات في Firebase Authentication. حذف هذا الملف يزيل صلاحيات قاعدة البيانات فقط ولا يحذف حساب المصادقة.</p>
                             <div class="flex gap-2 pt-2">
                                 <button type="submit" id="userSubmitBtn"
-                                    class="gold-gradient-bg text-black font-bold px-4 py-2 rounded text-xs">إضافة مستخدم
-                                    جديد</button>
+                                    class="gold-gradient-bg text-black font-bold px-4 py-2 rounded text-xs">ربط ملف الصلاحيات</button>
                                 <button type="button" onclick="resetUserForm()"
                                     class="bg-zinc-800 text-zinc-300 px-4 py-2 rounded text-xs">إغلاق</button>
                             </div>
@@ -68,7 +74,7 @@
                             <table class="custom-table" id="usersTable">
                                 <thead>
                                     <tr>
-                                        <th>اسم المستخدم</th>
+                                        <th>المستخدم / البريد</th>
                                         <th>الصلاحية والوظيفة</th>
                                         <th>الفرع التابع له</th>
                                         <th>الهاتف / واتساب</th>

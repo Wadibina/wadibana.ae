@@ -1,10 +1,10 @@
 export const firebaseConfig = Object.freeze({
-    apiKey: "AIzaSyCX0AnjNnffeRCFGDugKeOI8k8adJC1aqs",
-    authDomain: "wadi-bana-b585b.firebaseapp.com",
-    databaseURL: "https://wadi-bana-b585b-default-rtdb.firebaseio.com",
-    projectId: "wadi-bana-b585b",
-    storageBucket: "wadi-bana-b585b.firebasestorage.app",
-    messagingSenderId: "57806694102",
-    appId: "1:57806694102:web:8b2f38f1b86c0240290b77",
-    measurementId: "G-DR3Y513XP9"
+    apiKey: "AIzaSyCLXvmewFrLltNnyT7MqLe8hZHAYKUcpIg",
+    authDomain: "project-f5a8d8d3-2c42-41cc-b93.firebaseapp.com",
+    databaseURL: "https://project-f5a8d8d3-2c42-41cc-b93-default-rtdb.firebaseio.com",
+    projectId: "project-f5a8d8d3-2c42-41cc-b93",
+    storageBucket: "project-f5a8d8d3-2c42-41cc-b93.firebasestorage.app",
+    messagingSenderId: "99092911579",
+    appId: "1:99092911579:web:4c4e00441343c51896c3fe",
+    measurementId: "G-X5V6T1XFSR"
 });

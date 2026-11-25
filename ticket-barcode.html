@@ -5,8 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>باركود التذاكر | وادي بناء</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <style>
@@ -76,22 +74,24 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
-    import { getDatabase, ref, get, onValue } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js";
-    import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-functions.js";
+    import { getDatabase, ref, get, onValue, runTransaction } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-database.js";
     import { firebaseConfig } from "./assets/js/firebase-config.js";
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getDatabase(app);
-    const functions = getFunctions(app);
     let passengerRecords = [];
     let scanner = null;
     let processingScan = false;
     let stopPassengerListener = null;
+    let activeUser = null;
+    let activeBranch = null;
 
     onAuthStateChanged(auth, async user => {
       if (stopPassengerListener) stopPassengerListener();
       passengerRecords = [];
+      activeUser = user;
+      activeBranch = null;
       if (!user) {
         document.getElementById('dbStatus').textContent = 'يلزم تسجيل الدخول لعرض بيانات التذاكر.';
         return;
@@ -103,6 +103,7 @@
         if (profile?.active !== true || !['ajman', 'abudhabi', 'ain', 'muscat', 'yemen'].includes(branch)) {
           throw new Error('هذا الحساب لا يملك فرعاً محدداً للتحقق من التذاكر.');
         }
+        activeBranch = branch;
         stopPassengerListener = onValue(ref(db, `systemUnifiedData/${branch}/passengers`), snapshot => {
           const value = snapshot.val();
           passengerRecords = Array.isArray(value) ? value.filter(Boolean) : (value ? Object.values(value) : []);
@@ -171,13 +172,26 @@
       }
 
       try {
-        const checkIn = httpsCallable(functions, 'recordTicketCheckIn');
-        const response = await checkIn({ ticketId });
-        if (response.data.committed) {
+        if (!activeUser || !activeBranch || !/^[A-Za-z0-9_-]{1,64}$/.test(ticketId)) {
+          throw new Error('يلزم حساب نشط ورقم تذكرة صالح.');
+        }
+        const checkInRef = ref(db, `ticketCheckIns/${activeBranch}/${ticketId}`);
+        const transaction = await runTransaction(checkInRef, existing => {
+          if (existing) return;
+          return {
+            ticketId: String(ticket.id),
+            branchId: activeBranch,
+            checkedInByUid: activeUser.uid,
+            checkedInBy: activeUser.email || '',
+            checkedInAt: Date.now()
+          };
+        });
+        if (transaction.committed) {
           result.textContent = 'تم التحقق وتسجيل الصعود بنجاح — #' + ticket.id + ' — ' + (ticket.name || '');
           result.className = 'min-h-6 text-center font-bold text-emerald-400';
         } else {
-          result.textContent = 'تنبيه: التذكرة #' + ticket.id + ' مسجلة للصعود مسبقاً' + (response.data.checkedInBy ? ' بواسطة ' + response.data.checkedInBy : '') + '.';
+          const checkedInBy = transaction.snapshot.val()?.checkedInBy;
+          result.textContent = 'تنبيه: التذكرة #' + ticket.id + ' مسجلة للصعود مسبقاً' + (checkedInBy ? ' بواسطة ' + checkedInBy : '') + '.';
           result.className = 'min-h-6 text-center font-bold text-amber-300';
         }
       } catch (error) {
