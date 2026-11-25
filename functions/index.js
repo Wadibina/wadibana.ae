@@ -5,8 +5,10 @@ const { promisify } = require('node:util');
 const { initializeApp } = require('firebase-admin/app');
 const { getAuth } = require('firebase-admin/auth');
 const { getDatabase } = require('firebase-admin/database');
+const { setGlobalOptions } = require('firebase-functions');
 const { HttpsError, onCall } = require('firebase-functions/v2/https');
 
+setGlobalOptions({ maxInstances: 10 });
 initializeApp({ databaseURL: 'https://project-f5a8d8d3-2c42-41cc-b93-default-rtdb.firebaseio.com' });
 
 const database = getDatabase();
